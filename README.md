@@ -26,6 +26,37 @@ Each tool is configured with Lua where applicable, providing a modern and flexib
 
 # Installation
 
+## Prerequisites
+
+### Install Nerd Fonts
+Nerd Fonts are required for proper rendering of powerline symbols and icons in the terminal. Here's how to install them:
+
+1. Download a Nerd Font of your choice from the [Nerd Fonts website](https://www.nerdfonts.com/font-downloads). 
+   Recommended fonts: JetBrainsMono Nerd Font, Meslo Nerd Font, or FiraCode Nerd Font.
+
+2. Install the font:
+
+   - **For macOS:**
+     - Double-click the downloaded font files and click "Install Font"
+     - Or, copy the font files to `~/Library/Fonts/`
+
+   - **For Ubuntu/Debian:**
+     ```bash
+     mkdir -p ~/.local/share/fonts
+     mv /path/to/downloaded/nerd/font.ttf ~/.local/share/fonts/
+     fc-cache -fv
+     ```
+
+   - **For RHEL/CentOS:**
+     ```bash
+     sudo mv /path/to/downloaded/nerd/font.ttf /usr/share/fonts/
+     sudo fc-cache -fv
+     ```
+
+3. Configure your terminal to use the installed Nerd Font:
+   - For most terminals, go to Preferences/Settings and change the font to your installed Nerd Font
+   - For iTerm2 on macOS, go to Preferences > Profiles > Text and change the font
+
 ## .zshrc
 To use this file, just make sure the following:
 1. Verify your default shell is zsh ($SHELL)
