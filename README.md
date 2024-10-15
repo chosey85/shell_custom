@@ -1,9 +1,31 @@
 # Introduction
-The following repo is a bunch of shell customizations provided by Chosey85.
-The current related applications are Wezterm and Powerlevel10K (invoked from .zshrc).
-In addition the .zshrc that I'm using is also provided, including Zinit plugins, aliases and some extenstions.
+
+Welcome to my personal shell and development environment configuration repository. This collection of dotfiles and configurations is designed to create a powerful, efficient, and visually appealing command-line experience.
+
+## What's Inside
+
+This repository contains customizations for:
+
+- **Zsh**: Enhanced shell with Zinit plugin manager, powerlevel10k theme, and fzf integration
+- **Powerlevel10k**: A highly customizable Zsh theme
+- **Wezterm**: A GPU-accelerated cross-platform terminal emulator and multiplexer
+- **Neovim**: A highly extensible Vim-based text editor
+
+Each tool is configured with Lua where applicable, providing a modern and flexible setup.
+
+## Key Features
+
+- Zsh configuration with auto-completion, suggestions, custom aliases, and history modifications
+- Powerlevel10k for a sleek and informative prompt
+- Wezterm setup for an efficient terminal experience
+- Neovim configuration with lazy.nvim for plugin management, including:
+  - Telescope for fuzzy finding
+  - Treesitter for improved syntax highlighting
+  - Neo-tree for file exploration
+  - Custom color schemes (Catppuccin and Melange)
 
 # Installation
+
 ## .zshrc
 To use this file, just make sure the following:
 1. Verify your default shell is zsh ($SHELL)
