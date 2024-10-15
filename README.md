@@ -2,6 +2,26 @@
 
 Welcome to my personal shell and development environment configuration repository. This collection of dotfiles and configurations is designed to create a powerful, efficient, and visually appealing command-line experience.
 
+## Disclaimer
+
+This repository is a personal collection of configurations and tools that I use to enhance my development environment. It is important to note:
+
+1. **Third-Party Software**: The software and tools configured in this repository (including but not limited to Zsh, Neovim, Wezterm, fzf, and powerlevel10k) are not my creations. They are developed and maintained by their respective owners and communities. I highly respect their work and encourage users to visit the original projects for more information:
+
+   - [Zsh](https://www.zsh.org/)
+   - [Neovim](https://neovim.io/)
+   - [Wezterm](https://wezfurlong.org/wezterm/)
+   - [fzf](https://github.com/junegunn/fzf)
+   - [powerlevel10k](https://github.com/romkatv/powerlevel10k)
+
+2. **Personal Use**: The configurations and customizations in this repository are tailored to my personal preferences and workflow. While I'm happy to share them, they may not suit everyone's needs or preferences.
+
+3. **No Warranty**: This repository is provided "as is", without warranty of any kind. Use of these configurations is at your own risk.
+
+4. **Respect Licenses**: When using or adapting any part of this repository, please respect the licenses of the individual software components and any third-party code included.
+
+The purpose of this repository is to consolidate and version control my personal development environment setup, making it easier for me to maintain and deploy across different machines. If others find it useful as a reference or starting point for their own configurations, that's a welcome bonus!
+
 ## What's Inside
 
 This repository contains customizations for:
