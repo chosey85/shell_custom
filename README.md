@@ -63,6 +63,9 @@ To use this file, just make sure the following:
 2. Create a backup of your current .zshrc in ~/
 3. Copy the .zshrc to ~/
 
+fzf tab example:
+<img width="1499" alt="image" src="https://github.com/user-attachments/assets/5ebc5034-714c-447c-9459-eb3c0c160c62">
+
 ## Powerlevel10k
 To use my Powerlevel10K configuration, just backup the .p10k.zsh file in ~/ and replace it with this file
 
@@ -98,3 +101,7 @@ nvim --version
 :Lazy sync
 ```
 4. Once this is done, exit and enter nvim again to make sure there are no errors
+
+Neovim example with Neotree:
+<img width="1482" alt="image" src="https://github.com/user-attachments/assets/cabed93b-fe19-4ba5-a372-0a5fbe3eba79">
+
