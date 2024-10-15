@@ -36,7 +36,9 @@ To use this file, just make sure the following:
 To use my Powerlevel10K configuration, just backup the .p10k.zsh file in ~/ and replace it with this file
 
 ## Wezterm
-To use my Wezterm.lua config, make sure to install wezterm and put wezterm.lua in ~/.config/wezterm/
+To use my Wezterm.lua config: 
+1. Make sure to install wezterm - https://wezfurlong.org/wezterm/installation.html
+2. Put wezterm.lua in ~/.config/wezterm/
 
 ## NeoVim
 For using the lua configuration file, you must have at least Neovim v0.8.0 installed.
@@ -46,7 +48,16 @@ sudo add-apt-repository ppa:neovim-ppa/unstable
 sudo apt update
 sudo apt install neovim
 ```
-For other OSs, make sure to install using the relevant package manager.
+For RHEL bases operating systems, use the following:
+```
+sudo dnf install epel-release
+sudo dnf install ninja-build libtool autoconf automake cmake gcc gcc-c++ make pkgconfig unzip patch gettext curl
+git clone https://github.com/neovim/neovim
+git checkout stable
+make CMAKE_BUILD_TYPE=RelWithDebInfo
+sudo make install
+nvim --version
+```
 
 2. Place all the the content of nvim directory under ~/.config/nvim/
 3. When running nvim, you may be required to update Lazy by running:
