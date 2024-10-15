@@ -15,3 +15,11 @@ To use my Powerlevel10K configuration, just backup the .p10k.zsh file in ~/ and 
 
 ## Wezterm
 To use my Wezterm.lua config, make sure to install wezterm and put wezterm.lua in ~/.config/wezterm/
+
+## NeoVim
+For using the lua configuration file, you must have at least Neovim v0.8.0 installed.
+1. For Ubuntu Linux, make sure to install the latest version:
+``` bash
+sudo add-apt-repository ppa:neovim-ppa/unstable
+sudo apt update
+sudo apt install neovim```
