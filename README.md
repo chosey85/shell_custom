@@ -24,9 +24,11 @@ sudo add-apt-repository ppa:neovim-ppa/unstable
 sudo apt update
 sudo apt install neovim
 ```
+
 For other OSs, make sure to install using the relevant package manager.
 2. Place all the the content of nvim directory under ~/.config/nvim/
 3. When running nvim, you may be required to update Lazy by running:
+
 ```
 :Lazy update
 :Lazy sync
