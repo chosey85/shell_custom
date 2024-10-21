@@ -60,6 +60,7 @@ zstyle ':fzf-tab:complete:cd:*' fzf-preview 'ls --color $realpath'
 alias ls='ls --color'
 alias vi=nvim
 alias ic='cd ~/Library/Mobile Documents/com~apple~CloudDocs'
+alias flushdns="sudo dscacheutil -flushcache; sudo killall -HUP mDNSResponder; say 'DNS flushed'"
 
 # Verify fzf is installed, and install if it's not
 
