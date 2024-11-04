@@ -58,9 +58,8 @@ zstyle ':fzf-tab:complete:cd:*' fzf-preview 'ls --color $realpath'
 
 # Aliases
 alias ls='ls --color'
-alias vi=nvim
-alias ic='cd ~/Library/Mobile Documents/com~apple~CloudDocs'
-alias flushdns="sudo dscacheutil -flushcache; sudo killall -HUP mDNSResponder; say 'DNS flushed'"
+alias vi='nvim'
+
 
 # Verify fzf is installed, and install if it's not
 
@@ -73,3 +72,15 @@ fi
 # Shell integrations
 [ -f ~/.fzf.zsh ] && source ~/.fzf.zsh
 eval "$(fzf --zsh)"
+
+# Source OS-specific configurations
+case "$(uname)" in
+  "Darwin")
+    # macOS specific config
+    [ -f ~/.zsh/macos.zsh ] && source ~/.zsh/macos.zsh
+    ;;
+  "Linux")
+    # Linux specific config
+    [ -f ~/.zsh/linux.zsh ] && source ~/.zsh/linux.zsh
+    ;;
+esac
