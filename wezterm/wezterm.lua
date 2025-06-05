@@ -1,14 +1,16 @@
 local wezterm = require("wezterm")
+local cyberduck_ssh = require("cyberduck_ssh") -- Import our cyberduck module
+
 local config = wezterm.config_builder()
 
 -- General Settings
 config.automatically_reload_config = true
 config.enable_tab_bar = true
+config.use_fancy_tab_bar = true -- Switch back to fancy tab bar for better styling
 config.window_close_confirmation = "NeverPrompt"
 config.window_decorations = "TITLE | RESIZE"
 config.default_cursor_style = "BlinkingBar"
 config.color_scheme = "Pastel White (terminal.sexy)"
-config.use_fancy_tab_bar = true
 
 -- Font Settings
 config.font = wezterm.font("JetBrains Mono", {
@@ -31,10 +33,52 @@ config.window_background_opacity = 0.8
 config.cursor_blink_rate = 800
 config.cursor_thickness = "0.1cell"
 
--- Tab Bar Customization: Wider Tabs and Fancy Appearance
-config.tab_max_width = 40
+-- Tab Bar Customization: Using fancy tab bar with custom styling
+config.tab_max_width = 35
+config.tab_bar_at_bottom = false
+config.hide_tab_bar_if_only_one_tab = false
+config.show_tab_index_in_tab_bar = true
+config.show_new_tab_button_in_tab_bar = true
 
--- Color Settings
+-- Custom tab title formatting for fancy tabs
+wezterm.on('format-tab-title', function(tab, tabs, panes, config, hover, max_width)
+    local process = string.gsub(tab.active_pane.foreground_process_name or '', '(.*[/\\])(.*)', '%2')
+    local title = tab.active_pane.title
+
+    -- Add process-specific prefixes
+    local prefixes = {
+        ['ssh'] = '🌐 ',
+        ['nvim'] = '📝 ',
+        ['vim'] = '📝 ',
+        ['node'] = '⚡ ',
+        ['python'] = '🐍 ',
+        ['git'] = '📋 ',
+        ['cargo'] = '🦀 ',
+        ['docker'] = '🐳 ',
+    }
+
+    local prefix = prefixes[process] or '💻 '
+    local display_title = prefix .. process
+
+    -- Truncate if needed
+    if #display_title > max_width - 4 then
+        display_title = display_title:sub(1, max_width - 7) .. '...'
+    end
+
+    return display_title
+end)
+
+-- Enhanced status line
+wezterm.on('update-right-status', function(window, pane)
+    local date_time = wezterm.strftime '%d-%m-%Y %H:%M:%S'
+
+    window:set_right_status(wezterm.format {
+        { Foreground = { Color = '#8fbc8f' } }, -- Olive green to match tabs
+        { Text = '📅 ' .. date_time .. ' ' },
+    })
+end)
+
+-- Color Settings - Olive green theme
 config.colors = {
     foreground = "#B5B5B5",
     background = "black",
@@ -43,26 +87,45 @@ config.colors = {
     cursor_border = "#00FF00",
     selection_bg = "#44475a",
     selection_fg = "black",
+
+    -- Olive green tab bar colors
     tab_bar = {
-        background = "black",
+        background = "#1a1a1a",
+
         active_tab = {
-            bg_color = "#4c566a",
-            fg_color = "#d8dee9",
+            bg_color = "#8fbc8f", -- Olive green (dark sea green)
+            fg_color = "#1a1a1a", -- Dark text for contrast
+            intensity = "Bold",
         },
+
         inactive_tab = {
-            bg_color = "#3b4252",
-            fg_color = "#d8dee9",
+            bg_color = "#2d2d2d", -- Dark gray
+            fg_color = "#cccccc", -- Light gray text
+        },
+
+        inactive_tab_hover = {
+            bg_color = "#404040", -- Lighter gray on hover
+            fg_color = "#ffffff", -- White on hover
+        },
+
+        new_tab = {
+            bg_color = "#2d2d2d",
+            fg_color = "#8fbc8f", -- Olive green + button
+        },
+
+        new_tab_hover = {
+            bg_color = "#404040",
+            fg_color = "#a3d977", -- Lighter green on hover
         },
     },
 }
 
--- Function to get current SSH hostname from prompt
+-- Function to get current SSH hostname from prompt (original function, kept for compatibility)
 local function get_current_ssh_host(window)
     local pane = window:active_pane()
     local text = pane:get_lines_as_text()
     local lines = wezterm.split_by_newlines(text)
     local last_line = lines[#lines]
-
     -- Look for a pattern like "user@hostname:" in the prompt
     local hostname = last_line:match('@([^:]+):')
     return hostname
@@ -97,20 +160,48 @@ config.keys = {
     { key = "h", mods = "CTRL|SHIFT", action = wezterm.action { SplitHorizontal = { domain = "CurrentPaneDomain" } } },
     { key = "v", mods = "CTRL|SHIFT", action = wezterm.action { SplitVertical = { domain = "CurrentPaneDomain" } } },
 
-    -- New key binding for opening a new tab with hostname
+    -- Existing key binding for opening a new tab with hostname
     { key = "i", mods = "CTRL|SHIFT", action = wezterm.action.EmitEvent 'open_tab_with_hostname' },
+
+    -- Existing termscp binding
     {
         key = "k",
         mods = "CTRL|SHIFT",
         action = wezterm.action_callback(function(win, pane)
             -- Open a new tab
             win:perform_action(wezterm.action.SpawnTab("CurrentPaneDomain"), pane)
-
             -- Send the hostname command to the new tab
             win:perform_action(wezterm.action.SendString("termscp lab1010:22:/ -P 123456\n"), win:active_pane())
         end),
     },
+
+    -- NEW: Open Cyberduck SCP session to current SSH host (using our module)
+    {
+        key = "c",
+        mods = "CTRL|SHIFT",
+        action = wezterm.action_callback(function(win, pane)
+            cyberduck_ssh.open_cyberduck_scp(win, pane)
+        end),
+    },
+
+    -- OPTIONAL: Alternative Cyberduck method (uncomment if needed for troubleshooting)
+    -- {
+    --     key = "c",
+    --     mods = "CTRL|ALT|SHIFT",
+    --     action = wezterm.action_callback(function(win, pane)
+    --         cyberduck_ssh.open_cyberduck_direct(win, pane)
+    --     end),
+    -- },
 }
+
+-- General Settings
+config.automatically_reload_config = true
+config.enable_tab_bar = true
+config.window_close_confirmation = "NeverPrompt"
+config.window_decorations = "TITLE | RESIZE"
+config.default_cursor_style = "BlinkingBar"
+config.color_scheme = "Pastel White (terminal.sexy)"
+config.use_fancy_tab_bar = true
 
 -- Default Shell
 config.default_prog = { "/bin/zsh", "-l" }
