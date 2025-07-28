@@ -57,8 +57,10 @@ zstyle ':completion:*' menu no
 zstyle ':fzf-tab:complete:cd:*' fzf-preview 'ls --color $realpath'
 
 # Aliases
-alias ls='ls --color'
+alias ls='lsd'
 alias vi='nvim'
+alias vimdiff='nvim -d'
+alias diff='nvim -d'
 
 
 # Verify fzf is installed, and install if it's not
