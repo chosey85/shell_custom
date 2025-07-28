@@ -1,22 +1,33 @@
 local wezterm = require("wezterm")
 local cyberduck_ssh = require("cyberduck_ssh") -- Import our cyberduck module
+local cyberduck_debug = require("cyberduck_ssh_debug") -- Debug version
 
 local config = wezterm.config_builder()
+
+-- ========================================
+-- THEME SWITCHER - Change this line to switch themes!
+-- ========================================
+local current_theme = "melange"  -- Options: "melange" or "catppuccin"
+-- Alternative: Set environment variable WEZTERM_THEME=catppuccin or WEZTERM_THEME=melange
+-- local current_theme = os.getenv("WEZTERM_THEME") or "melange"
 
 -- General Settings
 config.automatically_reload_config = true
 config.enable_tab_bar = true
-config.use_fancy_tab_bar = true -- Switch back to fancy tab bar for better styling
+config.use_fancy_tab_bar = true  -- enabled for better appearance with custom styling
 config.window_close_confirmation = "NeverPrompt"
 config.window_decorations = "TITLE | RESIZE"
-config.default_cursor_style = "BlinkingBar"
-config.color_scheme = "Pastel White (terminal.sexy)"
+config.webgpu_power_preference = "LowPower"
 
 -- Font Settings
 config.font = wezterm.font("JetBrains Mono", {
     weight = "DemiBold",
 })
-config.font_size = 12.5
+config.font_size = 15.5
+
+-- Window Size Settings
+config.initial_cols = 120  -- Default 80 * 1.5
+config.initial_rows = 36   -- Default 24 * 1.5
 
 -- Window Padding
 config.window_padding = {
@@ -27,43 +38,51 @@ config.window_padding = {
 }
 
 -- Background Opacity
-config.window_background_opacity = 0.8
+config.window_background_opacity = 0.9
+config.macos_window_background_blur = 0
+config.front_end = "WebGpu"
 
 -- Cursor Customization
-config.cursor_blink_rate = 800
-config.cursor_thickness = "0.1cell"
-
--- Tab Bar Customization: Using fancy tab bar with custom styling
-config.tab_max_width = 35
+config.cursor_blink_rate = 500  -- Blink rate in milliseconds
+config.cursor_thickness = "0.2cell"
+config.cursor_blink_ease_in = "Constant"
+config.cursor_blink_ease_out = "Constant"
+config.default_cursor_style = "BlinkingBlock"
+-- Tab Bar Customization: Using fancy tab bar with custom styling (disabled above)
+config.tab_max_width = 50  -- Generous width to avoid truncation
 config.tab_bar_at_bottom = false
 config.hide_tab_bar_if_only_one_tab = false
-config.show_tab_index_in_tab_bar = true
+config.show_tab_index_in_tab_bar = false  -- Disable tab numbers for cleaner look
 config.show_new_tab_button_in_tab_bar = true
 
 -- Custom tab title formatting for fancy tabs
 wezterm.on('format-tab-title', function(tab, tabs, panes, config, hover, max_width)
     local process = string.gsub(tab.active_pane.foreground_process_name or '', '(.*[/\\])(.*)', '%2')
-    local title = tab.active_pane.title
 
-    -- Add process-specific prefixes
-    local prefixes = {
-        ['ssh'] = '🌐 ',
-        ['nvim'] = '📝 ',
-        ['vim'] = '📝 ',
-        ['node'] = '⚡ ',
-        ['python'] = '🐍 ',
-        ['git'] = '📋 ',
-        ['cargo'] = '🦀 ',
-        ['docker'] = '🐳 ',
+    -- Simple icon mapping for common processes
+    local icons = {
+        ['Python'] = '🐍',
+        ['python'] = '🐍',
+        ['python3'] = '🐍',
+        ['zsh'] = '💻',
+        ['bash'] = '💻',
+        ['node'] = '⚡',
+        ['docker'] = '🐳',
+        ['kubectl'] = '☸️',
+        ['k9s'] = '☸️',
+        ['ssh'] = '🌐',
+        ['nvim'] = '📝',
+        ['vim'] = '📝',
+        ['git'] = '📋',
+        ['go'] = '🐹',
+        ['java'] = '☕',
+        ['ruby'] = '💎',
+        ['rust'] = '🦀',
+        ['cargo'] = '🦀',
     }
 
-    local prefix = prefixes[process] or '💻 '
-    local display_title = prefix .. process
-
-    -- Truncate if needed
-    if #display_title > max_width - 4 then
-        display_title = display_title:sub(1, max_width - 7) .. '...'
-    end
+    local icon = icons[process] or icons[string.lower(process)] or '💻'
+    local display_title = '  ' .. icon .. '  ' .. process .. '  '
 
     return display_title
 end)
@@ -73,52 +92,103 @@ wezterm.on('update-right-status', function(window, pane)
     local date_time = wezterm.strftime '%d-%m-%Y %H:%M:%S'
 
     window:set_right_status(wezterm.format {
-        { Foreground = { Color = '#8fbc8f' } }, -- Olive green to match tabs
+        { Foreground = { Color = '#9ACD32' } }, -- Light yellow-green to match cursor
         { Text = '📅 ' .. date_time .. ' ' },
     })
 end)
 
--- Color Settings - Olive green theme
-config.colors = {
-    foreground = "#B5B5B5",
-    background = "black",
-    cursor_bg = "#00FF00",
-    cursor_fg = "black",
-    cursor_border = "#00FF00",
-    selection_bg = "#44475a",
-    selection_fg = "black",
+-- ========================================
+-- DYNAMIC THEME APPLICATION
+-- ========================================
+if current_theme == "catppuccin" then
+    -- Catppuccin Mocha Theme
+    config.color_scheme = "Catppuccin Mocha"
+    config.colors = {
+        tab_bar = {
+            background = "#181825", -- Catppuccin mantle
+            active_tab = {
+                bg_color = "#fab387", -- Catppuccin Mocha peach (orange)
+                fg_color = "#1e1e2e", -- Catppuccin base for contrast
+                intensity = "Bold",
+            },
+            inactive_tab = {
+                bg_color = "#313244", -- Catppuccin surface0
+                fg_color = "#cdd6f4", -- Catppuccin text
+            },
+            inactive_tab_hover = {
+                bg_color = "#45475a", -- Catppuccin surface1
+                fg_color = "#f5e0dc", -- Catppuccin rosewater
+            },
+            new_tab = {
+                bg_color = "#313244", -- Catppuccin surface0
+                fg_color = "#89b4fa", -- Catppuccin blue button
+            },
+            new_tab_hover = {
+                bg_color = "#45475a", -- Catppuccin surface1
+                fg_color = "#89dceb", -- Catppuccin sky on hover
+            },
+        },
+    }
+else
+    -- Melange Theme (Default)
+    config.colors = {
+        foreground = "#ede0c8", -- Much lighter warm beige text
+        background = "#2d2721", -- Melange dark brown background
+        cursor_bg = "#9ACD32",   -- Light yellow-green cursor
+        cursor_fg = "#2d2721",   -- Dark cursor text
+        cursor_border = "#9ACD32", -- Light yellow-green cursor border
+        selection_bg = "#4f4135", -- Melange medium brown selection
+        selection_fg = "#ede0c8", -- Much lighter beige text
 
-    -- Olive green tab bar colors
-    tab_bar = {
-        background = "#1a1a1a",
-
-        active_tab = {
-            bg_color = "#8fbc8f", -- Olive green (dark sea green)
-            fg_color = "#1a1a1a", -- Dark text for contrast
-            intensity = "Bold",
+        -- ANSI colors (Melange-inspired palette with MAXIMUM brightness for commands/flags)
+        ansi = {
+            "#4f4135", -- black (medium brown)
+            "#e89664", -- red (lighter warm orange)
+            "#f0f0c0", -- green (nearly white-green for commands)
+            "#ffffc0", -- yellow (nearly pure white-yellow for flags/arguments)
+            "#a1b2d6", -- blue (lighter muted blue)
+            "#d6a0d6", -- magenta (lighter warm purple)
+            "#a1d6d6", -- cyan (lighter muted teal)
+            "#ede0c8", -- white (much lighter warm beige)
+        },
+        brights = {
+            "#726450", -- bright black (darker brown)
+            "#f0a876", -- bright red (even lighter orange)
+            "#fafad0", -- bright green (almost pure white-green for commands)
+            "#ffffcc", -- bright yellow (pure white-yellow for flags/arguments)
+            "#b8c9e8", -- bright blue (even lighter blue)
+            "#e8b8e8", -- bright magenta (even lighter purple)
+            "#b8e8e8", -- bright cyan (even lighter teal)
+            "#f5ebd6", -- bright white (very light cream)
         },
 
-        inactive_tab = {
-            bg_color = "#2d2d2d", -- Dark gray
-            fg_color = "#cccccc", -- Light gray text
+        -- Melange tab bar colors
+        tab_bar = {
+            background = "#2d2721", -- Melange dark background
+            active_tab = {
+                bg_color = "#d47d49", -- Melange warm orange
+                fg_color = "#2d2721", -- Dark text for contrast
+                intensity = "Bold",
+            },
+            inactive_tab = {
+                bg_color = "#4f4135", -- Melange medium brown
+                fg_color = "#ede0c8", -- Much lighter beige text
+            },
+            inactive_tab_hover = {
+                bg_color = "#726450", -- Melange darker brown
+                fg_color = "#f5ebd6", -- Very light cream on hover
+            },
+            new_tab = {
+                bg_color = "#4f4135", -- Melange medium brown
+                fg_color = "#99936d", -- Melange warm green button
+            },
+            new_tab_hover = {
+                bg_color = "#726450", -- Melange darker brown
+                fg_color = "#a9a674", -- Brighter green on hover
+            },
         },
-
-        inactive_tab_hover = {
-            bg_color = "#404040", -- Lighter gray on hover
-            fg_color = "#ffffff", -- White on hover
-        },
-
-        new_tab = {
-            bg_color = "#2d2d2d",
-            fg_color = "#8fbc8f", -- Olive green + button
-        },
-
-        new_tab_hover = {
-            bg_color = "#404040",
-            fg_color = "#a3d977", -- Lighter green on hover
-        },
-    },
-}
+    }
+end
 
 -- Function to get current SSH hostname from prompt (original function, kept for compatibility)
 local function get_current_ssh_host(window)
@@ -184,26 +254,18 @@ config.keys = {
         end),
     },
 
-    -- OPTIONAL: Alternative Cyberduck method (uncomment if needed for troubleshooting)
-    -- {
-    --     key = "c",
-    --     mods = "CTRL|ALT|SHIFT",
-    --     action = wezterm.action_callback(function(win, pane)
-    --         cyberduck_ssh.open_cyberduck_direct(win, pane)
-    --     end),
-    -- },
+    -- DEBUG: Test Cyberduck with debug logging
+    {
+        key = "d",
+        mods = "CTRL|SHIFT",
+        action = wezterm.action_callback(function(win, pane)
+            cyberduck_debug.open_cyberduck_debug(win, pane)
+        end),
+    },
 }
-
--- General Settings
-config.automatically_reload_config = true
-config.enable_tab_bar = true
-config.window_close_confirmation = "NeverPrompt"
-config.window_decorations = "TITLE | RESIZE"
-config.default_cursor_style = "BlinkingBar"
-config.color_scheme = "Pastel White (terminal.sexy)"
-config.use_fancy_tab_bar = true
 
 -- Default Shell
 config.default_prog = { "/bin/zsh", "-l" }
 
 return config
+
