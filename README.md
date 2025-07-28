@@ -64,6 +64,9 @@ brew install node
 # Python for Neovim
 brew install python3
 pip3 install pynvim
+
+# Cyberduck for SSH file transfer integration (optional)
+brew install --cask cyberduck
 ```
 
 3. **Install JetBrains Mono Nerd Font**:
@@ -132,7 +135,7 @@ nvim +Lazy sync +qa
 - `Ctrl+Shift+W`: Close tab
 - `Ctrl+Shift+H`: Split horizontally
 - `Ctrl+Shift+V`: Split vertically
-- `Ctrl+Shift+C`: Open Cyberduck SCP to current SSH host
+- `Ctrl+Shift+C`: Open Cyberduck SCP to current SSH host (requires Cyberduck)
 - `Ctrl+Shift+K`: Open termscp to lab1010
 
 ### Zsh

@@ -119,6 +119,14 @@ else
     print_success "JetBrains Mono Nerd Font is already installed"
 fi
 
+# Step 4.5: Install Cyberduck (optional, for WezTerm SSH integration)
+print_status "Installing Cyberduck for SSH file transfer integration..."
+if ! brew list --cask cyberduck &>/dev/null; then
+    brew install --cask cyberduck
+else
+    print_success "Cyberduck is already installed"
+fi
+
 # Step 5: Install Python packages for Neovim
 print_status "Installing Python packages for Neovim..."
 pip3 install --user pynvim
