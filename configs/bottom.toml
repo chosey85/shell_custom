@@ -1,0 +1,93 @@
+# Bottom (btm) configuration - Melange theme
+# Custom configuration for shell_custom project
+
+[flags]
+# Update rate in milliseconds (500ms = 2 updates per second)
+rate = 500
+# Hide the average CPU entry in CPU widget
+hide_avg_cpu = false
+# Show processes as a tree
+tree = false
+# Case sensitivity for search
+case_sensitive = false
+# Temperature type (celsius, fahrenheit, kelvin)
+temperature_type = "celsius"
+# Use old network legend style
+use_old_network_legend = false
+# Enable GPU widget
+enable_gpu = true
+# Retain process table on exit
+retain_on_quit = false
+# Group processes with same name
+group_processes = false
+# Show process command instead of just name
+show_process_command = false
+
+[cpu]
+# Default CPU widget entry
+default = "all"
+
+[memory]
+# Default memory widget type
+default = "mem"
+
+[network]
+# Default network widget entry
+default = "all"
+
+[disk]
+# Columns for disk widget
+columns = ["Disk", "Mount", "Used", "Free", "Total", "Use%"]
+
+[processes]
+# Columns for process widget - optimized for development
+columns = ["PID", "Name", "CPU%", "Mem%", "R/s", "W/s", "T.Read", "T.Write", "User", "State", "Time"]
+
+[colors]
+# Melange-inspired color theme matching our terminal setup
+table_header_color = "#ede0c8"          # Light beige for headers
+all_cpu_color = "#d47d49"               # Warm orange for CPU
+avg_cpu_color = "#99936d"               # Warm green for avg CPU
+cpu_core_colors = ["#d47d49", "#c37b89", "#87a987", "#87ceeb", "#d3a0bc", "#e49b5d"]
+ram_color = "#87a987"                   # Green for RAM
+cache_color = "#b4a7a7"                 # Light brown for cache
+swap_color = "#c1a78e"                  # Beige for swap
+arc_color = "#8da3b9"                   # Blue for ARC
+gpu_core_colors = ["#d47d49", "#c37b89"]
+rx_color = "#87ceeb"                    # Sky blue for RX
+tx_color = "#d3a0bc"                    # Light purple for TX
+rx_total_color = "#a4b7c1"              # Light blue total
+tx_total_color = "#c9a4c9"              # Light purple total
+border_color = "#4f4135"                # Medium brown borders
+highlighted_border_color = "#d47d49"    # Orange for highlighted
+text_color = "#ede0c8"                  # Light beige text
+selected_text_color = "#2d2721"         # Dark brown selected text
+selected_bg_color = "#d47d49"           # Orange selected background
+widget_title_color = "#99936d"          # Warm green titles
+graph_color = "#87a987"                 # Green for graphs
+high_battery_color = "#87a987"          # Green for high battery
+medium_battery_color = "#e49b5d"        # Orange for medium battery
+low_battery_color = "#c37b89"           # Red for low battery
+
+# Layout configuration optimized for development monitoring
+[[row]]
+  [[row.child]]
+  type = "cpu"
+  ratio = 30
+  [[row.child]]
+  type = "mem"
+  ratio = 20
+  [[row.child]]
+  type = "temp"
+  ratio = 20
+  [[row.child]]
+  type = "disk"
+  ratio = 30
+
+[[row]]
+  [[row.child]]
+  type = "net"
+  ratio = 40
+  [[row.child]]
+  type = "proc"
+  ratio = 60

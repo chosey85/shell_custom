@@ -1,6 +1,7 @@
 local wezterm = require("wezterm")
 local cyberduck_ssh = require("cyberduck_ssh") -- Import our cyberduck module
 local cyberduck_debug = require("cyberduck_ssh_debug") -- Debug version
+local ssh_launcher = require("ssh_launcher_fixed_final") -- Import SSH launcher module
 
 local config = wezterm.config_builder()
 
@@ -58,7 +59,8 @@ config.show_new_tab_button_in_tab_bar = true
 -- Custom tab title formatting for fancy tabs
 wezterm.on('format-tab-title', function(tab, tabs, panes, config, hover, max_width)
     local process = string.gsub(tab.active_pane.foreground_process_name or '', '(.*[/\\])(.*)', '%2')
-
+    local pane = tab.active_pane
+    
     -- Simple icon mapping for common processes
     local icons = {
         ['Python'] = '🐍',
@@ -71,6 +73,7 @@ wezterm.on('format-tab-title', function(tab, tabs, panes, config, hover, max_wid
         ['kubectl'] = '☸️',
         ['k9s'] = '☸️',
         ['ssh'] = '🌐',
+        ['sshpass'] = '🌐', -- Same icon as SSH
         ['nvim'] = '📝',
         ['vim'] = '📝',
         ['git'] = '📋',
@@ -82,7 +85,18 @@ wezterm.on('format-tab-title', function(tab, tabs, panes, config, hover, max_wid
     }
 
     local icon = icons[process] or icons[string.lower(process)] or '💻'
-    local display_title = '  ' .. icon .. '  ' .. process .. '  '
+    
+    -- For SSH connections, use the custom title if it's been set
+    local display_name = process
+    if (process == 'ssh' or process == 'sshpass') then
+        icon = '🌐' -- Ensure SSH icon
+        -- Check if we have a custom title set via set_title()
+        if tab.tab_title and tab.tab_title ~= "" then
+            display_name = tab.tab_title
+        end
+    end
+    
+    local display_title = '  ' .. icon .. '  ' .. display_name .. '  '
 
     return display_title
 end)
@@ -261,6 +275,23 @@ config.keys = {
         action = wezterm.action_callback(function(win, pane)
             cyberduck_debug.open_cyberduck_debug(win, pane)
         end),
+    },
+    
+    -- SSH Launcher: Open SSH server selection menu
+    {
+        key = "s",
+        mods = "CTRL|SHIFT",
+        action = wezterm.action_callback(function(win, pane)
+            wezterm.log_info("SSH Launcher key binding triggered!")
+            ssh_launcher.show_ssh_launcher(win, pane)
+        end),
+    },
+    
+    -- Test key binding
+    {
+        key = "l",
+        mods = "CTRL|SHIFT",
+        action = wezterm.action.ShowLauncher,
     },
 }
 
