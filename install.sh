@@ -198,6 +198,30 @@ cp "$SCRIPT_DIR/configs/bottom.toml" "$HOME/.config/bottom/"
 cp "$SCRIPT_DIR/configs/procs.toml" "$HOME/.config/procs/config.toml"
 print_success "System monitoring tools configuration installed"
 
+# WezTerm SSH scripts installation
+print_status "Installing WezTerm SSH scripts..."
+mkdir -p "$HOME/.local/bin"
+
+# Copy scripts to user's local bin
+cp "$SCRIPT_DIR/scripts/wezterm_ssh_export.sh" "$HOME/.local/bin/"
+cp "$SCRIPT_DIR/scripts/wezterm_ssh_import.sh" "$HOME/.local/bin/"
+
+# Make scripts executable
+chmod +x "$HOME/.local/bin/wezterm_ssh_export.sh"
+chmod +x "$HOME/.local/bin/wezterm_ssh_import.sh"
+
+# Add ~/.local/bin to PATH in .zshrc if not already present
+if ! grep -q 'export PATH="$HOME/.local/bin:$PATH"' "$HOME/.zshrc"; then
+    echo '' >> "$HOME/.zshrc"
+    echo '# Add user scripts to PATH' >> "$HOME/.zshrc"
+    echo 'export PATH="$HOME/.local/bin:$PATH"' >> "$HOME/.zshrc"
+    print_status "Added ~/.local/bin to PATH in .zshrc"
+else
+    print_status "~/.local/bin already in PATH"
+fi
+
+print_success "WezTerm SSH scripts installed and added to PATH"
+
 # Step 8: Install fzf key bindings and completion
 print_status "Installing fzf key bindings and completion..."
 if [ ! -f "$HOME/.fzf.zsh" ]; then
@@ -225,5 +249,10 @@ echo "Optional customizations:"
 echo "- Run 'p10k configure' to customize your prompt"
 echo "- Edit ~/.config/wezterm/wezterm.lua to change themes"
 echo "- Check the README.md for more customization options"
+echo
+echo "WezTerm SSH Management:"
+echo "- Export SSH config: wezterm_ssh_export.sh"
+echo "- Import SSH config: wezterm_ssh_import.sh"
+echo "- Launch SSH servers: Ctrl+Shift+S"
 echo
 print_success "Enjoy your new shell environment! 🚀"

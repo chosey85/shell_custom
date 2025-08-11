@@ -77,23 +77,43 @@ The SSH Launcher provides XShell/MobaXterm-like functionality directly in WezTer
 ##### Managing Servers
 - **Edit**: Select "✏️ Edit Server" to modify existing servers
 - **Delete**: Select "🗑️ Delete Server" to remove servers
-- **Export**: Select "📤 Export All Servers (Encrypted)" to backup configuration
-- **Import**: Select "📥 Import from Encrypted File" to restore configuration
 - **Security Icons**: 🔐 indicates password stored, 🔑 indicates SSH key
 
-##### Backup & Migration
+### 💾 Backup & Migration (Global Commands)
+The SSH configuration can be backed up and restored using standalone command-line tools:
+
 **Export Configuration:**
-1. Press `Ctrl+Shift+S` and select "📤 Export All Servers (Encrypted)"
-2. Enter a secure password (minimum 8 characters)
-3. Confirm the password
-4. File saved to `~/Downloads/ssh_launcher_export_TIMESTAMP.enc`
+```bash
+# Run from anywhere in your terminal
+wezterm_ssh_export.sh
+
+# Interactive process:
+# 1. Finds your servers and extracts passwords from Keychain
+# 2. Enter encryption password (min 8 chars) and confirm
+# 3. Creates encrypted file: ~/Downloads/ssh_launcher_export_TIMESTAMP.enc
+```
 
 **Import Configuration:**
-1. Press `Ctrl+Shift+S` and select "📥 Import from Encrypted File"
-2. Enter the path to your `.enc` file (or drag & drop)
-3. Enter the decryption password
-4. Choose: Replace all servers or Merge with existing
-5. Passwords are automatically restored to Keychain
+```bash
+# Run from anywhere in your terminal
+wezterm_ssh_import.sh
+
+# Or specify file directly:
+wezterm_ssh_import.sh ~/Downloads/ssh_launcher_export_20240111_120000.enc
+
+# Interactive process:
+# 1. Enter decryption password
+# 2. Choose import mode: Replace all (recommended) or Merge
+# 3. Servers and passwords automatically restored
+```
+
+**Why Separate Commands?**
+- **🚀 More Reliable**: No complex callback nesting in WezTerm Lua
+- **🔧 Better Debugging**: Clear error messages and detailed progress feedback  
+- **📱 Universal**: Works from any terminal, anywhere in your system
+- **🎯 Clean Separation**: SSH Launcher focuses on connection, scripts handle backup
+- **⚡ Simple Usage**: Just type the command when you need backup/restore
+- **🛡️ Independent**: Backup/restore works even if WezTerm config changes
 
 **Security Features:**
 - **AES-256-CBC Encryption**: Military-grade encryption for exported data
@@ -169,6 +189,8 @@ The installer will:
 | `procs` | Better process list | Colorful ps with ports and Docker info |
 | `dust` | Visual disk usage | `dust ~/Downloads` → see what's taking space |
 | `sudo bandwhich` | Network monitor | See which apps use your bandwidth |
+| `wezterm_ssh_export.sh` | Export SSH config | Backup servers + passwords to encrypted file |
+| `wezterm_ssh_import.sh` | Import SSH config | Restore servers from encrypted backup |
 
 ## 🎨 Customization Tips
 
