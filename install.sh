@@ -148,17 +148,19 @@ fi
 
 # Step 4.6: Install sshpass for WezTerm SSH launcher password authentication
 print_status "Installing sshpass for SSH launcher password authentication..."
-if ! brew list sshpass &>/dev/null; then
-    brew install hudochenkov/sshpass/sshpass
-else
+if brew list sshpass &>/dev/null; then
     print_success "sshpass is already installed"
+else
+    print_status "Installing sshpass via Homebrew tap..."
+    if brew install hudochenkov/sshpass/sshpass; then
+        print_success "sshpass installed successfully"
+    else
+        print_warning "sshpass installation encountered an issue - continuing with installation"
+        print_warning "You can install it manually later with: brew install hudochenkov/sshpass/sshpass"
+    fi
 fi
 
-# Step 5: Install Python packages for Neovim
-print_status "Installing Python packages for Neovim..."
-pip3 install --user pynvim
-
-# Step 6: Set Zsh as default shell if needed
+# Step 5: Set Zsh as default shell if needed
 if [[ "$SHELL" != *"zsh"* ]]; then
     print_status "Setting Zsh as default shell..."
     chsh -s $(which zsh)
@@ -167,7 +169,7 @@ else
     print_success "Zsh is already the default shell"
 fi
 
-# Step 7: Install configuration files
+# Step 6: Install configuration files
 print_status "Installing configuration files..."
 
 # Get the directory where the script is located
@@ -237,7 +239,7 @@ fi
 
 print_success "WezTerm SSH scripts installed and added to PATH"
 
-# Step 8: Install fzf key bindings and completion
+# Step 7: Install fzf key bindings and completion
 print_status "Installing fzf key bindings and completion..."
 if [ ! -f "$HOME/.fzf.zsh" ]; then
     $(brew --prefix)/opt/fzf/install --all --no-bash --no-fish
@@ -245,10 +247,10 @@ else
     print_success "fzf key bindings are already installed"
 fi
 
-# Step 9: Install Zinit (will be done automatically on first Zsh launch)
+# Step 8: Install Zinit (will be done automatically on first Zsh launch)
 print_status "Zinit will be installed automatically on first Zsh launch"
 
-# Step 10: Final setup instructions
+# Step 9: Final setup instructions
 echo
 echo -e "${GREEN}================================"
 echo "Installation Complete!"
@@ -269,5 +271,8 @@ echo "WezTerm SSH Management:"
 echo "- Export SSH config: wezterm_ssh_export.sh"
 echo "- Import SSH config: wezterm_ssh_import.sh"
 echo "- Launch SSH servers: Ctrl+Shift+S"
+echo
+echo "Note: If you need Python support in Neovim:"
+echo "- Install with: pip3 install --user pynvim"
 echo
 print_success "Enjoy your new shell environment! 🚀"
