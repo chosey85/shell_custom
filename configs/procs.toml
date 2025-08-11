@@ -1,0 +1,167 @@
+# Procs configuration - Melange theme
+# Custom configuration for shell_custom project matching terminal colors
+
+# Process columns optimized for development work
+[[columns]]
+kind = "Pid"
+style = "BrightYellow|Yellow"  # Matches our yellow-green cursor theme
+numeric_search = true
+nonnumeric_search = false
+align = "Right"
+
+[[columns]]
+kind = "User"
+style = "BrightGreen|Green"  # Melange warm green
+numeric_search = false
+nonnumeric_search = true
+align = "Left"
+
+[[columns]]
+kind = "Separator"
+style = "White|BrightBlack"  # Subtle separator
+numeric_search = false
+nonnumeric_search = false
+align = "Left"
+
+[[columns]]
+kind = "State"
+style = "ByState"  # Dynamic coloring by process state
+numeric_search = false
+nonnumeric_search = false
+align = "Center"
+
+[[columns]]
+kind = "UsageCpu"
+style = "ByPercentage"  # Dynamic coloring by CPU usage
+numeric_search = false
+nonnumeric_search = false
+align = "Right"
+
+[[columns]]
+kind = "UsageMem"
+style = "ByPercentage"  # Dynamic coloring by memory usage
+numeric_search = false
+nonnumeric_search = false
+align = "Right"
+
+[[columns]]
+kind = "VmSize"
+style = "ByUnit"  # Dynamic coloring by memory unit
+numeric_search = false
+nonnumeric_search = false
+align = "Right"
+
+[[columns]]
+kind = "CpuTime"
+style = "BrightCyan|Cyan"  # Time in cyan
+numeric_search = false
+nonnumeric_search = false
+align = "Right"
+
+# Network info for development
+[[columns]]
+kind = "TcpPort"
+style = "BrightMagenta|Magenta"  # TCP ports in magenta
+numeric_search = true
+nonnumeric_search = false
+align = "Left"
+
+[[columns]]
+kind = "UdpPort"
+style = "BrightMagenta|Magenta"  # UDP ports in magenta
+numeric_search = true
+nonnumeric_search = false
+align = "Left"
+
+[[columns]]
+kind = "Separator"
+style = "White|BrightBlack"
+numeric_search = false
+nonnumeric_search = false
+align = "Left"
+
+[[columns]]
+kind = "Command"
+style = "BrightWhite|Black"  # Command in bright white
+numeric_search = false
+nonnumeric_search = true
+align = "Left"
+
+# Style configuration matching Melange theme
+[style]
+header = "BrightWhite|Black"  # Headers in bright white
+unit = "Yellow|BrightBlack"   # Units in yellow
+tree = "BrightWhite|Black"    # Tree structure
+
+# Dynamic percentage coloring (CPU/Memory usage)
+[style.by_percentage]
+color_000 = "BrightBlue|Blue"      # 0-25%: Blue (low usage)
+color_025 = "BrightGreen|Green"    # 25-50%: Green (normal)
+color_050 = "BrightYellow|Yellow"  # 50-75%: Yellow (moderate)
+color_075 = "BrightRed|Red"        # 75-100%: Red (high usage)
+color_100 = "BrightRed|Red"        # 100%: Bright red (maximum)
+
+# Process state coloring
+[style.by_state]
+color_d = "BrightRed|Red"        # Dead processes
+color_r = "BrightGreen|Green"    # Running processes
+color_s = "BrightBlue|Blue"      # Sleeping processes
+color_t = "BrightCyan|Cyan"      # Traced/stopped
+color_z = "BrightMagenta|Magenta" # Zombie processes
+color_x = "BrightMagenta|Magenta" # Dead processes
+color_k = "BrightYellow|Yellow"   # Wakekill
+color_w = "BrightYellow|Yellow"   # Waking
+color_p = "BrightYellow|Yellow"   # Parked
+
+# Memory unit coloring
+[style.by_unit]
+color_k = "BrightBlue|Blue"      # KB
+color_m = "BrightGreen|Green"    # MB
+color_g = "BrightYellow|Yellow"  # GB
+color_t = "BrightRed|Red"        # TB
+color_p = "BrightRed|Red"        # PB
+color_x = "BrightBlue|Blue"      # Other
+
+# Search configuration
+[search]
+numeric_search = "Exact"
+nonnumeric_search = "Partial"
+logic = "And"
+case = "Smart"
+
+# Display configuration
+[display]
+show_self = false              # Hide procs process itself
+show_self_parents = false      # Hide parent processes of procs
+show_thread = false            # Don't show threads by default
+show_thread_in_tree = true     # Show threads in tree mode
+show_parent_in_tree = true     # Show parent processes in tree
+show_children_in_tree = true   # Show child processes in tree
+show_header = true             # Show column headers
+show_footer = false            # Hide footer
+cut_to_terminal = true         # Cut output to terminal width
+cut_to_pager = false           # Don't cut when using pager
+cut_to_pipe = false            # Don't cut when piping
+color_mode = "Auto"            # Auto-detect color support
+separator = "│"                # Column separator
+ascending = "▲"                # Ascending sort indicator
+descending = "▼"               # Descending sort indicator
+tree_symbols = ["│", "─", "┬", "├", "└"]  # Tree drawing symbols
+abbr_sid = true                # Abbreviate session ID
+theme = "Auto"                 # Auto-detect light/dark theme
+show_kthreads = true           # Show kernel threads
+
+# Default sorting
+[sort]
+column = 0      # Sort by first column (PID)
+order = "Ascending"
+
+# Docker configuration (if available)
+[docker]
+path = "unix:///var/run/docker.sock"
+
+# Pager configuration
+[pager]
+mode = "Auto"           # Auto-detect pager need
+detect_width = false    # Don't detect width for pager
+use_builtin = false     # Use system pager

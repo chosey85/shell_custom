@@ -99,6 +99,10 @@ packages=(
     "lsd"
     "node"
     "python3"
+    "bottom"
+    "procs"
+    "bandwhich"
+    "dust"
 )
 
 for package in "${packages[@]}"; do
@@ -125,6 +129,14 @@ if ! brew list --cask cyberduck &>/dev/null; then
     brew install --cask cyberduck
 else
     print_success "Cyberduck is already installed"
+fi
+
+# Step 4.6: Install sshpass for WezTerm SSH launcher password authentication
+print_status "Installing sshpass for SSH launcher password authentication..."
+if ! brew list sshpass &>/dev/null; then
+    brew install hudochenkov/sshpass/sshpass
+else
+    print_success "sshpass is already installed"
 fi
 
 # Step 5: Install Python packages for Neovim
@@ -177,6 +189,14 @@ print_status "Installing Neovim configuration..."
 backup_if_exists "$HOME/.config/nvim"
 cp -r "$SCRIPT_DIR/nvim" "$HOME/.config/"
 print_success "Neovim configuration installed"
+
+# System monitoring tools configuration
+print_status "Installing system monitoring tools configuration..."
+mkdir -p "$HOME/.config/bottom"
+mkdir -p "$HOME/.config/procs"
+cp "$SCRIPT_DIR/configs/bottom.toml" "$HOME/.config/bottom/"
+cp "$SCRIPT_DIR/configs/procs.toml" "$HOME/.config/procs/config.toml"
+print_success "System monitoring tools configuration installed"
 
 # Step 8: Install fzf key bindings and completion
 print_status "Installing fzf key bindings and completion..."

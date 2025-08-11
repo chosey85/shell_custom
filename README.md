@@ -43,9 +43,57 @@ Welcome to an awesome terminal setup that will make your command-line experience
 ### 🛠️ Productivity Boosters
 - **Better ls**: `lsd` command with icons and colors
 - **Faster grep**: `ripgrep` for blazing fast file searches
+- **SSH Launcher**: Professional SSH server manager with secure password storage (Ctrl+Shift+S)
 - **SSH Integration**: Ctrl+Shift+C opens Cyberduck for easy file transfers
 - **Git Awareness**: See branch and status right in your prompt
 - **Command Aliases**: Short versions of common commands
+
+### 🌐 SSH Launcher (Professional Server Manager)
+The SSH Launcher provides XShell/MobaXterm-like functionality directly in WezTerm:
+
+#### ✨ Features
+- **🔐 Secure Password Storage**: Passwords stored in macOS Keychain for maximum security
+- **⚡ Quick Access**: Press `Ctrl+Shift+S` to instantly open the server selection menu
+- **📋 Server Management**: Add, edit, and delete servers with ease
+- **🎯 Smart Defaults**: Port 22 is assumed for standard SSH connections
+- **🌐 Tab Titles**: SSH tabs display the hostname for easy identification
+
+#### 📖 Usage Guide
+
+##### Adding a Server with Password
+1. Press `Ctrl+Shift+S` to open the launcher
+2. Select "➕ Add New Server"
+3. Enter server details in format: `ServerName,Host,User,Password`
+   - Example: `MyLab,192.168.1.10,admin,mypassword`
+   - Port 22 is used by default (no need to specify)
+4. Server is added and launcher closes automatically
+
+##### Connecting to Servers
+1. Press `Ctrl+Shift+S` to open the launcher
+2. Select any server from the list
+3. A new SSH tab opens with hostname as the tab title
+4. Password authentication happens automatically via sshpass
+
+##### Managing Servers
+- **Edit**: Select "✏️ Edit Server" to modify existing servers
+- **Delete**: Select "🗑️ Delete Server" to remove servers
+- **Security Icons**: 🔐 indicates password stored, 🔑 indicates SSH key
+
+##### Server Format
+```
+ServerName,Host,User,Password[,Port]
+```
+- **ServerName**: Display name for the server
+- **Host**: IP address or hostname
+- **User**: SSH username
+- **Password**: Password (stored securely in Keychain)
+- **Port**: Optional, defaults to 22
+
+### 📊 **Modern System Monitoring (Rust-Powered)**
+- **Bottom (btm)**: Beautiful htop replacement with customizable widgets and real-time graphs
+- **Procs**: Colorful ps alternative with TCP/UDP ports, Docker info, and smart search
+- **Dust**: Visual disk usage analyzer with tree view and size bars
+- **Bandwhich**: Real-time network bandwidth usage by process (requires sudo)
 
 ## 🎯 Quick Install (Recommended)
 
@@ -79,6 +127,7 @@ The installer will:
 | `Ctrl+Shift+H` | Split horizontally | ↔️ |
 | `Ctrl+Shift+V` | Split vertically | ↕️ |
 | `Ctrl+Shift+C` | Open file manager for current SSH | 📁 |
+| `Ctrl+Shift+S` | Open SSH server launcher | 🌐 |
 
 ### Shell Magic (Zsh)
 | Shortcut | Action | Emoji Guide |
@@ -94,6 +143,10 @@ The installer will:
 | `cd **<Tab>` | Jump to any subdirectory | `cd **src<Tab>` → shows all 'src' folders |
 | `ls` | Pretty list with icons | `ls` → 📁 Documents 📄 file.txt |
 | `vi` | Opens Neovim | `vi config.json` → powerful editing |
+| `btm` | Modern system monitor | Shows CPU, memory, processes with graphs |
+| `procs` | Better process list | Colorful ps with ports and Docker info |
+| `dust` | Visual disk usage | `dust ~/Downloads` → see what's taking space |
+| `sudo bandwhich` | Network monitor | See which apps use your bandwidth |
 
 ## 🎨 Customization Tips
 
@@ -143,13 +196,20 @@ This setup brings together these amazing tools:
 - 🚄 [ripgrep](https://github.com/BurntSushi/ripgrep) - Ultra-fast file search
 - 📊 [lsd](https://github.com/lsd-rs/lsd) - Better ls with icons
 - 🦆 [Cyberduck](https://cyberduck.io/) - File transfer tool
+- 🔐 [sshpass](https://github.com/kevinburke/sshpass) - SSH password authentication for launcher
+- ⚡ [Bottom](https://github.com/ClementTsang/bottom) - Modern system monitor
+- 🔄 [Procs](https://github.com/dalance/procs) - Modern ps replacement
+- 💾 [Dust](https://github.com/bootandy/dust) - Visual disk usage analyzer
+- 🌐 [Bandwhich](https://github.com/imsnif/bandwhich) - Network bandwidth monitor
 
 ## 💡 Pro Tips
 
 1. **Use Tab Everywhere**: Seriously, hit Tab after typing a few letters of anything
 2. **Split Panes**: Use splits to compare files or run commands while editing
 3. **Time Travel**: Your command timestamps help debug "when did I run that?"
-4. **SSH Power**: The Cyberduck integration is a game-changer for remote work
+4. **SSH Power**: The Cyberduck integration and SSH launcher are game-changers for remote work
+5. **Secure Passwords**: SSH passwords are stored in macOS Keychain - never worry about security
+6. **Quick SSH**: `Ctrl+Shift+S` becomes muscle memory for instant server access
 
 ## 📜 License
 
