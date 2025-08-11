@@ -116,19 +116,34 @@ done
 
 # Step 4: Install JetBrains Mono Nerd Font
 print_status "Installing JetBrains Mono Nerd Font..."
-if ! brew list --cask font-jetbrains-mono-nerd-font &>/dev/null; then
-    brew tap homebrew/cask-fonts
-    brew install --cask font-jetbrains-mono-nerd-font
-else
+if brew list --cask font-jetbrains-mono-nerd-font &>/dev/null; then
     print_success "JetBrains Mono Nerd Font is already installed"
+else
+    print_status "Installing JetBrains Mono Nerd Font via Homebrew..."
+    brew tap homebrew/cask-fonts 2>/dev/null || true
+    if brew install --cask font-jetbrains-mono-nerd-font --force; then
+        print_success "JetBrains Mono Nerd Font installed successfully"
+    else
+        print_warning "Font installation encountered an issue - continuing with installation"
+        print_warning "You can install it manually later with: brew install --cask font-jetbrains-mono-nerd-font"
+    fi
 fi
 
 # Step 4.5: Install Cyberduck (optional, for WezTerm SSH integration)
 print_status "Installing Cyberduck for SSH file transfer integration..."
-if ! brew list --cask cyberduck &>/dev/null; then
-    brew install --cask cyberduck
+if [ -d "/Applications/Cyberduck.app" ]; then
+    print_success "Cyberduck is already installed (found in Applications)"
+elif brew list --cask cyberduck &>/dev/null; then
+    print_success "Cyberduck is already installed (found in Homebrew)"
 else
-    print_success "Cyberduck is already installed"
+    print_status "Installing Cyberduck via Homebrew (this may take a moment)..."
+    # Use --force to avoid interactive prompts and --no-quarantine to avoid Gatekeeper issues
+    if brew install --cask cyberduck --force --no-quarantine; then
+        print_success "Cyberduck installed successfully"
+    else
+        print_warning "Cyberduck installation encountered an issue - continuing with installation"
+        print_warning "You can install it manually later with: brew install --cask cyberduck"
+    fi
 fi
 
 # Step 4.6: Install sshpass for WezTerm SSH launcher password authentication
