@@ -77,7 +77,29 @@ The SSH Launcher provides XShell/MobaXterm-like functionality directly in WezTer
 ##### Managing Servers
 - **Edit**: Select "✏️ Edit Server" to modify existing servers
 - **Delete**: Select "🗑️ Delete Server" to remove servers
+- **Export**: Select "📤 Export All Servers (Encrypted)" to backup configuration
+- **Import**: Select "📥 Import from Encrypted File" to restore configuration
 - **Security Icons**: 🔐 indicates password stored, 🔑 indicates SSH key
+
+##### Backup & Migration
+**Export Configuration:**
+1. Press `Ctrl+Shift+S` and select "📤 Export All Servers (Encrypted)"
+2. Enter a secure password (minimum 8 characters)
+3. Confirm the password
+4. File saved to `~/Downloads/ssh_launcher_export_TIMESTAMP.enc`
+
+**Import Configuration:**
+1. Press `Ctrl+Shift+S` and select "📥 Import from Encrypted File"
+2. Enter the path to your `.enc` file (or drag & drop)
+3. Enter the decryption password
+4. Choose: Replace all servers or Merge with existing
+5. Passwords are automatically restored to Keychain
+
+**Security Features:**
+- **AES-256-CBC Encryption**: Military-grade encryption for exported data
+- **PBKDF2 Key Derivation**: 10,000 iterations for password strengthening
+- **Secure Cleanup**: Temporary files are overwritten before deletion
+- **Version Compatibility**: Export format versioning for future compatibility
 
 ##### Server Format
 ```
