@@ -1,7 +1,7 @@
 local wezterm = require("wezterm")
 local cyberduck_ssh = require("cyberduck_ssh") -- Import our cyberduck module
 local cyberduck_debug = require("cyberduck_ssh_debug") -- Debug version
-local ssh_launcher = require("ssh_launcher_fixed_final") -- Import SSH launcher module
+local ssh_launcher = require("ssh_launcher_export") -- Import SSH launcher module with export/import
 
 local config = wezterm.config_builder()
 
