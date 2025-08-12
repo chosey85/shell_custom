@@ -163,7 +163,18 @@ fi
 # Step 5: Set Zsh as default shell if needed
 if [[ "$SHELL" != *"zsh"* ]]; then
     print_status "Setting Zsh as default shell..."
-    chsh -s $(which zsh)
+    
+    # Get the path to zsh
+    ZSH_PATH=$(which zsh)
+    
+    # Check if this zsh path is already in /etc/shells
+    if ! grep -q "^$ZSH_PATH$" /etc/shells; then
+        print_status "Adding $ZSH_PATH to /etc/shells..."
+        echo "$ZSH_PATH" | sudo tee -a /etc/shells > /dev/null
+    fi
+    
+    # Now change the shell
+    chsh -s "$ZSH_PATH"
     print_warning "Shell changed to Zsh. You may need to log out and back in for changes to take effect."
 else
     print_success "Zsh is already the default shell"
