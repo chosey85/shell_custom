@@ -1,7 +1,8 @@
 #!/bin/bash
 
-# WezTerm SSH Configuration Export Script
+# WezTerm SSH Configuration Export Script v2.0
 # Exports servers.json and Keychain passwords to encrypted bundle
+# Fixed version with all bug fixes and improvements
 
 set -e
 
@@ -34,15 +35,15 @@ cat << "EOF"
    _____ _____ _   _   ______                       _   
   / ____/ ____| | | | |  ____|                     | |  
  | (___| (___ | |_| | | |__  __  ___ __   ___  _ __| |_ 
-  \___ \\___ \|  _  | |  __| \ \/ / '_ \ / _ \| '__| __|
+  \___ \___ \|  _  | |  __| \ \/ / '_ \ / _ \| '__| __|
   ____) |___) | | | | | |____ >  <| |_) | (_) | |  | |_ 
  |_____/_____/|_| |_| |______/_/\_\ .__/ \___/|_|   \__|
                                   | |                   
                                   |_|                   
 EOF
 echo -e "${NC}"
-echo "WezTerm SSH Configuration Export Tool"
-echo "====================================="
+echo "WezTerm SSH Configuration Export Tool v2.0"
+echo "=========================================="
 echo
 
 # Check if servers.json exists
@@ -59,6 +60,67 @@ HAS_FOLDERS=false
 if [[ -f "$FOLDERS_FILE" ]]; then
     HAS_FOLDERS=true
     print_status "Detected folder-enabled SSH launcher"
+    
+    # Validate folders.json structure
+    FOLDERS_VALID=$(python3 -c "
+import json, sys
+try:
+    with open('$FOLDERS_FILE', 'r') as f:
+        folders = json.load(f)
+    
+    # Check if root folder exists and has proper structure
+    root_found = False
+    for folder in folders:
+        if folder.get('id') == 'root':
+            if 'parent' not in folder:
+                print('MISSING_PARENT')
+                sys.exit(0)
+            root_found = True
+            break
+    
+    if not root_found:
+        print('NO_ROOT')
+    else:
+        print('VALID')
+except Exception as e:
+    print('INVALID')
+")
+    
+    case "$FOLDERS_VALID" in
+        "MISSING_PARENT")
+            print_warning "folders.json is missing 'parent' field for root folder - fixing..."
+            # Fix the folders.json file
+            python3 << EOF
+import json
+
+with open('$FOLDERS_FILE', 'r') as f:
+    folders = json.load(f)
+
+# Fix root folder if it's missing parent field
+for folder in folders:
+    if folder.get('id') == 'root' and 'parent' not in folder:
+        folder['parent'] = None
+        break
+
+with open('$FOLDERS_FILE', 'w') as f:
+    json.dump(folders, f, indent=2)
+
+print("Fixed folders.json - added missing parent field to root folder")
+EOF
+            print_success "folders.json has been fixed"
+            ;;
+        "NO_ROOT")
+            print_error "folders.json is missing root folder"
+            exit 1
+            ;;
+        "INVALID")
+            print_error "folders.json is corrupted or invalid JSON"
+            exit 1
+            ;;
+        "VALID")
+            print_success "folders.json structure is valid"
+            ;;
+    esac
 else
     print_status "Detected legacy SSH launcher (no folders)"
 fi
@@ -75,6 +137,11 @@ except:
 ")
 
 print_status "Found $SERVER_COUNT servers in configuration"
+
+if [[ $SERVER_COUNT -eq 0 ]]; then
+    print_warning "No servers found to export"
+    exit 0
+fi
 
 # Extract passwords from Keychain
 print_status "Extracting passwords from macOS Keychain..."
@@ -101,7 +168,7 @@ for server in servers:
         result = subprocess.run([
             'security', 'find-generic-password', 
             '-s', service, '-a', account, '-w'
-        ], capture_output=True, text=True, stderr=subprocess.DEVNULL)
+        ], capture_output=True, text=True)
         
         if result.returncode == 0:
             password = result.stdout.strip()
@@ -195,6 +262,12 @@ if '$INCLUDE_FOLDERS' == 'true' and os.path.exists('$FOLDERS_FILE'):
         with open('$FOLDERS_FILE', 'r') as f:
             folders = json.load(f)
         folders_count = len(folders)
+        
+        # Ensure root folder has proper parent field
+        for folder in folders:
+            if folder.get('id') == 'root' and 'parent' not in folder:
+                folder['parent'] = None
+                
     except:
         folders = []
 
@@ -207,8 +280,8 @@ if '$EXPORT_VERSION' == '1.0':
 # Create export bundle
 export_data = {
     "version": "$EXPORT_VERSION",
-    "exported_at": datetime.datetime.utcnow().isoformat() + "Z",
-    "exporter": "WezTerm SSH Export Script",
+    "exported_at": datetime.datetime.now(datetime.timezone.utc).isoformat(),
+    "exporter": "WezTerm SSH Export Script v2.0",
     "encryption": {
         "method": "aes-256-cbc",
         "iterations": 10000
@@ -293,4 +366,6 @@ print_success "Export process complete! 🚀"
 echo
 echo "To import this configuration:"
 echo "  wezterm_ssh_import.sh"
+echo "  or"
+echo "  wezterm_ssh_import.sh /path/to/export/file.enc"
 echo
