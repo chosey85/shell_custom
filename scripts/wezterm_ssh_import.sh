@@ -326,7 +326,7 @@ EOF
     
 else
     # Merge mode with migration
-    python3 << EOF
+    ADDED_COUNT=$(python3 << EOF
 import json
 import os
 
@@ -402,25 +402,6 @@ elif '$IMPORT_HAS_FOLDERS' == 'False' and '$CURRENT_HAS_FOLDERS' == 'true' and n
         json.dump(default_folders, f, indent=2)
 
 print(f"{added_count}")
-EOF
-    
-    # Extract the added count from the Python script output
-    ADDED_COUNT=$(python3 << 'EOF'
-import json
-
-# Load import data
-with open('$TEMP_DECRYPTED', 'r') as f:
-    import_data = json.load(f)
-
-# Load existing servers 
-existing_servers = []
-if int('$CURRENT_SERVER_COUNT') > 0:
-    with open('$SERVERS_FILE', 'r') as f:
-        existing_servers = json.load(f)
-
-existing_names = {server['name'] for server in existing_servers}
-added_count = sum(1 for server in import_data['servers'] if server['name'] not in existing_names)
-print(added_count)
 EOF
 )
     
