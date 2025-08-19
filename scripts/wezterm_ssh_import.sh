@@ -1,7 +1,8 @@
 #!/bin/bash
 
-# WezTerm SSH Configuration Import Script  
+# WezTerm SSH Configuration Import Script v5.0
 # Imports encrypted bundles back to servers.json and Keychain
+# Fixed subprocess bug in password import
 
 set -e
 
@@ -28,21 +29,25 @@ print_error() {
     echo -e "${RED}[ERROR]${NC} $1"
 }
 
+print_debug() {
+    echo -e "${YELLOW}[DEBUG]${NC} $1"
+}
+
 # Banner
 echo -e "${BLUE}"
 cat << "EOF"
    _____ _____ _   _   _____                            _   
   / ____/ ____| | | | |_   _|                          | |  
  | (___| (___ | |_| |   | |  _ __ ___  _ __   ___  _ __| |_ 
-  \___ \\___ \|  _  |   | | | '_ ` _ \| '_ \ / _ \| '__| __|
+  \___ \___ \|  _  |   | | | '_ ` _ \| '_ \ / _ \| '__| __|
   ____) |___) | | | |  _| |_| | | | | | |_) | (_) | |  | |_ 
  |_____/_____/|_| |_| |_____|_| |_| |_| .__/ \___/|_|   \__|
                                      | |                   
                                      |_|                   
 EOF
 echo -e "${NC}"
-echo "WezTerm SSH Configuration Import Tool"
-echo "====================================="
+echo "WezTerm SSH Configuration Import Tool v5.0"
+echo "=========================================="
 echo
 
 # Get import file path
@@ -82,23 +87,27 @@ if ! openssl enc -aes-256-cbc -d -pbkdf2 -iter 10000 \
     exit 1
 fi
 
-# Validate JSON and extract info
-IMPORT_INFO=$(python3 << EOF
+print_debug "Decrypted file created: $TEMP_DECRYPTED"
+
+# Validate and extract data in one step
+cat > "/tmp/validate_$$.py" << EOF
 import json
 import sys
 
+temp_file = '$TEMP_DECRYPTED'
+
 try:
-    with open('$TEMP_DECRYPTED', 'r') as f:
+    with open(temp_file, 'r') as f:
         data = json.load(f)
     
     # Validate structure
     if 'version' not in data or 'servers' not in data:
-        print("ERROR: Invalid export file format")
+        print("ERROR: Invalid export file format", file=sys.stderr)
         sys.exit(1)
     
     version = data['version']
     if version not in ['1.0', '2.0']:
-        print(f"ERROR: Incompatible version {version}")
+        print(f"ERROR: Incompatible version {version}", file=sys.stderr)
         sys.exit(1)
     
     server_count = len(data.get('servers', []))
@@ -107,29 +116,36 @@ try:
     has_folders = data.get('has_folders', False)
     folder_count = len(data.get('folders', [])) if has_folders else 0
     
-    print(f"VALID:{version}:{server_count}:{password_count}:{exported_at}:{has_folders}:{folder_count}")
+    # Output in a parseable format
+    print(f"VERSION={version}")
+    print(f"SERVER_COUNT={server_count}")
+    print(f"PASSWORD_COUNT={password_count}")
+    print(f"EXPORTED_AT={exported_at}")
+    print(f"HAS_FOLDERS={has_folders}")
+    print(f"FOLDER_COUNT={folder_count}")
     
 except Exception as e:
-    print(f"ERROR: Failed to parse import file: {e}")
+    print(f"ERROR: Failed to parse import file: {e}", file=sys.stderr)
     sys.exit(1)
 EOF
-)
 
-if [[ $IMPORT_INFO == ERROR:* ]]; then
-    print_error "${IMPORT_INFO#ERROR: }"
-    rm -f "$TEMP_DECRYPTED"
+# Run validation and source the output
+VALIDATION_OUTPUT="/tmp/validation_$$.env"
+if python3 "/tmp/validate_$$.py" > "$VALIDATION_OUTPUT" 2>&1; then
+    source "$VALIDATION_OUTPUT"
+    rm -f "$VALIDATION_OUTPUT" "/tmp/validate_$$.py"
+else
+    cat "$VALIDATION_OUTPUT"
+    rm -f "$VALIDATION_OUTPUT" "/tmp/validate_$$.py" "$TEMP_DECRYPTED"
     exit 1
 fi
 
-# Parse import info
-IFS=':' read -r _ IMPORT_VERSION IMPORT_SERVER_COUNT IMPORT_PASSWORD_COUNT EXPORTED_AT IMPORT_HAS_FOLDERS IMPORT_FOLDER_COUNT <<< "$IMPORT_INFO"
-
 print_success "Import file validated successfully"
-echo "  📂 Version: v$IMPORT_VERSION"
-if [[ "$IMPORT_HAS_FOLDERS" == "True" ]]; then
-    echo "  📊 Contains: $IMPORT_SERVER_COUNT servers, $IMPORT_PASSWORD_COUNT passwords, and $IMPORT_FOLDER_COUNT folders"
+echo "  📂 Version: v$VERSION"
+if [[ "$HAS_FOLDERS" == "True" ]]; then
+    echo "  📊 Contains: $SERVER_COUNT servers, $PASSWORD_COUNT passwords, and $FOLDER_COUNT folders"
 else
-    echo "  📊 Contains: $IMPORT_SERVER_COUNT servers with $IMPORT_PASSWORD_COUNT passwords (no folders)"
+    echo "  📊 Contains: $SERVER_COUNT servers with $PASSWORD_COUNT passwords (no folders)"
 fi
 echo "  📅 Exported: $EXPORTED_AT"
 
@@ -163,18 +179,18 @@ fi
 
 # Determine migration scenario
 echo
-if [[ "$IMPORT_HAS_FOLDERS" == "True" && "$CURRENT_HAS_FOLDERS" == "false" ]]; then
+if [[ "$HAS_FOLDERS" == "True" && "$CURRENT_HAS_FOLDERS" == "false" ]]; then
     print_warning "Migration: v2.0 export → v1.0 system (folders will be removed)"
-    echo "  • Folder information will be stripped from servers"
-    echo "  • Servers will be imported without folder organization"
-elif [[ "$IMPORT_HAS_FOLDERS" == "False" && "$CURRENT_HAS_FOLDERS" == "true" ]]; then
+    MIGRATION_TYPE="v2_to_v1"
+elif [[ "$HAS_FOLDERS" == "False" && "$CURRENT_HAS_FOLDERS" == "true" ]]; then
     print_warning "Migration: v1.0 export → v2.0 system (servers will be placed in Root folder)"
-    echo "  • All servers will be assigned to the Root folder"
-    echo "  • You can organize them into folders later"
-elif [[ "$IMPORT_HAS_FOLDERS" == "True" && "$CURRENT_HAS_FOLDERS" == "true" ]]; then
+    MIGRATION_TYPE="v1_to_v2"
+elif [[ "$HAS_FOLDERS" == "True" && "$CURRENT_HAS_FOLDERS" == "true" ]]; then
     print_status "Compatible: v2.0 export → v2.0 system (full compatibility)"
+    MIGRATION_TYPE="v2_to_v2"
 else
     print_status "Compatible: v1.0 export → v1.0 system (no changes needed)"
+    MIGRATION_TYPE="v1_to_v1"
 fi
 
 echo
@@ -215,256 +231,267 @@ if [[ -f "$SERVERS_FILE" && $CURRENT_SERVER_COUNT -gt 0 ]]; then
     BACKUP_FILE="$SERVERS_FILE.backup.$(date +%Y%m%d_%H%M%S)"
     print_status "Creating backup: $BACKUP_FILE"
     cp "$SERVERS_FILE" "$BACKUP_FILE"
-    
-    # Backup current passwords
-    print_status "Backing up current Keychain passwords..."
-    TEMP_BACKUP_PASSWORDS="/tmp/wezterm_backup_passwords_$$.json"
-    
-    python3 << EOF
-import json
-import subprocess
-
-# Read current servers
-with open('$SERVERS_FILE', 'r') as f:
-    servers = json.load(f)
-
-passwords = {}
-for server in servers:
-    server_name = server['name']
-    service = f"wezterm-ssh-{server_name}"
-    account = "password"
-    
-    try:
-        result = subprocess.run([
-            'security', 'find-generic-password', 
-            '-s', service, '-a', account, '-w'
-        ], capture_output=True, text=True, stderr=subprocess.DEVNULL)
-        
-        if result.returncode == 0:
-            password = result.stdout.strip()
-            if password:
-                passwords[server_name] = password
-    except:
-        pass
-
-with open('$TEMP_BACKUP_PASSWORDS', 'w') as f:
-    json.dump(passwords, f)
-EOF
 fi
 
-# Import servers with migration logic
-print_status "Importing server configurations..."
+# Create config directory if it doesn't exist
+mkdir -p "$HOME/.config/wezterm"
 
-if [[ "$IMPORT_MODE" == "replace" ]]; then
-    # Clear existing passwords if replacing
-    if [[ $CURRENT_SERVER_COUNT -gt 0 ]]; then
-        print_status "Clearing existing Keychain passwords..."
-        python3 << EOF
-import json
-import subprocess
+# Import servers and folders
+print_status "Importing server configurations and folders..."
 
-with open('$BACKUP_FILE', 'r') as f:
-    servers = json.load(f)
-
-for server in servers:
-    server_name = server['name']
-    service = f"wezterm-ssh-{server_name}"
-    subprocess.run([
-        'security', 'delete-generic-password', 
-        '-s', service, '-a', 'password'
-    ], stderr=subprocess.DEVNULL)
-EOF
-    fi
-    
-    # Import servers with migration logic
-    python3 << EOF
+cat > "/tmp/import_data_$$.py" << EOF
 import json
 import os
 
-with open('$TEMP_DECRYPTED', 'r') as f:
+# Read the decrypted data
+temp_file = '$TEMP_DECRYPTED'
+with open(temp_file, 'r') as f:
     data = json.load(f)
 
 servers = data['servers']
+print(f"Loaded {len(servers)} servers from import file")
 
-# Migration logic
-if '$IMPORT_HAS_FOLDERS' == 'True' and '$CURRENT_HAS_FOLDERS' == 'false':
+# Apply migration logic
+migration_type = '$MIGRATION_TYPE'
+print(f"Applying migration: {migration_type}")
+
+if migration_type == 'v2_to_v1':
     # v2.0 → v1.0: Strip folder_id from servers
-    print("Migrating from v2.0 to v1.0: removing folder references")
+    print("Removing folder references from servers")
     for server in servers:
         if 'folder_id' in server:
             del server['folder_id']
             
-elif '$IMPORT_HAS_FOLDERS' == 'False' and '$CURRENT_HAS_FOLDERS' == 'true':
+elif migration_type == 'v1_to_v2':
     # v1.0 → v2.0: Add folder_id = "root" to all servers
-    print("Migrating from v1.0 to v2.0: assigning servers to Root folder")
+    print("Assigning servers to Root folder")
     for server in servers:
         server['folder_id'] = 'root'
+
+# Handle existing servers for merge mode
+if '$IMPORT_MODE' == 'merge':
+    print("Merge mode: loading existing servers")
+    existing_servers = []
+    servers_file = '$SERVERS_FILE'
+    if os.path.exists(servers_file) and $CURRENT_SERVER_COUNT > 0:
+        with open(servers_file, 'r') as f:
+            existing_servers = json.load(f)
+    
+    # Create name set for duplicate checking
+    existing_names = {server['name'] for server in existing_servers}
+    
+    # Add new servers (skip duplicates)
+    added_count = 0
+    for import_server in servers:
+        if import_server['name'] not in existing_names:
+            existing_servers.append(import_server)
+            added_count += 1
+    
+    servers = existing_servers
+    print(f"Merge completed: added {added_count} new servers")
 
 # Save servers
-with open('$SERVERS_FILE', 'w') as f:
+servers_file = '$SERVERS_FILE'
+print(f"Writing {len(servers)} servers to {servers_file}")
+with open(servers_file, 'w') as f:
     json.dump(servers, f, indent=2)
+print("Servers saved successfully")
 
-# Handle folders import
-if '$IMPORT_HAS_FOLDERS' == 'True' and '$CURRENT_HAS_FOLDERS' == 'true':
-    # Import folders for v2.0 → v2.0
-    print("Importing folder structure")
-    folders = data.get('folders', [])
-    with open('$FOLDERS_FILE', 'w') as f:
+# Handle folders
+folders_file = '$FOLDERS_FILE'
+migration_type = '$MIGRATION_TYPE'
+
+if migration_type in ['v2_to_v2', 'v1_to_v2']:
+    # Need to handle folders
+    if migration_type == 'v2_to_v2':
+        # Import folders from export
+        folders = data.get('folders', [])
+        print(f"Importing {len(folders)} folders from export")
+        
+        # Ensure root folder has proper parent field
+        for folder in folders:
+            if folder.get('id') == 'root' and 'parent' not in folder:
+                folder['parent'] = None
+                print("Fixed missing parent field in root folder")
+    
+    else:  # v1_to_v2
+        # Create default folder structure
+        print("Creating default folder structure")
+        folders = [{"id": "root", "name": "Root", "parent": None}]
+    
+    print(f"Writing {len(folders)} folders to {folders_file}")
+    with open(folders_file, 'w') as f:
         json.dump(folders, f, indent=2)
-elif '$IMPORT_HAS_FOLDERS' == 'False' and '$CURRENT_HAS_FOLDERS' == 'true':
-    # Create minimal folders.json for v1.0 → v2.0
-    print("Creating default folder structure")
-    default_folders = [{"id": "root", "name": "Root", "parent": None}]
-    with open('$FOLDERS_FILE', 'w') as f:
-        json.dump(default_folders, f, indent=2)
-# For v2.0 → v1.0, we don't create folders.json (legacy system)
+    print("Folders saved successfully")
 
-print("Migration completed successfully")
+elif migration_type == 'v2_to_v1':
+    # Remove folders.json for legacy system
+    if os.path.exists(folders_file):
+        os.remove(folders_file)
+        print("Removed folders.json for legacy compatibility")
+
+print("Data import completed successfully")
 EOF
-    
-    FINAL_COUNT=$IMPORT_SERVER_COUNT
-    
-else
-    # Merge mode with migration
-    ADDED_COUNT=$(python3 << EOF
-import json
-import os
 
-# Load import data
-with open('$TEMP_DECRYPTED', 'r') as f:
-    import_data = json.load(f)
-
-import_servers = import_data['servers']
-
-# Apply migration to import servers
-if '$IMPORT_HAS_FOLDERS' == 'True' and '$CURRENT_HAS_FOLDERS' == 'false':
-    # v2.0 → v1.0: Strip folder_id from import servers
-    print("Migrating import servers from v2.0 to v1.0: removing folder references")
-    for server in import_servers:
-        if 'folder_id' in server:
-            del server['folder_id']
-            
-elif '$IMPORT_HAS_FOLDERS' == 'False' and '$CURRENT_HAS_FOLDERS' == 'true':
-    # v1.0 → v2.0: Add folder_id = "root" to import servers
-    print("Migrating import servers from v1.0 to v2.0: assigning to Root folder")
-    for server in import_servers:
-        server['folder_id'] = 'root'
-
-# Load existing servers (if any)
-existing_servers = []
-if '$CURRENT_SERVER_COUNT' != '0':
-    with open('$SERVERS_FILE', 'r') as f:
-        existing_servers = json.load(f)
-
-# Create name set for duplicate checking
-existing_names = {server['name'] for server in existing_servers}
-
-# Add new servers (skip duplicates)
-added_count = 0
-for import_server in import_servers:
-    if import_server['name'] not in existing_names:
-        existing_servers.append(import_server)
-        added_count += 1
-
-# Save merged servers
-with open('$SERVERS_FILE', 'w') as f:
-    json.dump(existing_servers, f, indent=2)
-
-# Handle folders for merge mode
-if '$IMPORT_HAS_FOLDERS' == 'True' and '$CURRENT_HAS_FOLDERS' == 'true' and added_count > 0:
-    # Merge folders for v2.0 → v2.0 (only if we added servers)
-    print("Merging folder structures")
-    import_folders = import_data.get('folders', [])
-    
-    # Load existing folders
-    existing_folders = []
-    if os.path.exists('$FOLDERS_FILE'):
-        with open('$FOLDERS_FILE', 'r') as f:
-            existing_folders = json.load(f)
-    
-    # Create folder ID set for duplicate checking
-    existing_folder_ids = {folder['id'] for folder in existing_folders}
-    
-    # Add new folders (skip duplicates by ID)
-    for import_folder in import_folders:
-        if import_folder['id'] not in existing_folder_ids and import_folder['id'] != 'root':
-            existing_folders.append(import_folder)
-    
-    # Save merged folders
-    with open('$FOLDERS_FILE', 'w') as f:
-        json.dump(existing_folders, f, indent=2)
-
-elif '$IMPORT_HAS_FOLDERS' == 'False' and '$CURRENT_HAS_FOLDERS' == 'true' and not os.path.exists('$FOLDERS_FILE'):
-    # Create minimal folders.json for v1.0 → v2.0 if it doesn't exist
-    print("Creating default folder structure")
-    default_folders = [{"id": "root", "name": "Root", "parent": None}]
-    with open('$FOLDERS_FILE', 'w') as f:
-        json.dump(default_folders, f, indent=2)
-
-print(f"{added_count}")
-EOF
-)
-    
-    FINAL_COUNT=$(($CURRENT_SERVER_COUNT + $ADDED_COUNT))
-fi
+# Run the import
+python3 "/tmp/import_data_$$.py"
+rm -f "/tmp/import_data_$$.py"
 
 # Import passwords
-print_status "Importing passwords to Keychain..."
+print_status "Importing $PASSWORD_COUNT passwords to Keychain..."
 
-PASSWORD_SUCCESS_COUNT=$(python3 << EOF
+if [[ $PASSWORD_COUNT -gt 0 ]]; then
+    # Clear existing passwords if replacing
+    if [[ "$IMPORT_MODE" == "replace" && $CURRENT_SERVER_COUNT -gt 0 && -f "$BACKUP_FILE" ]]; then
+        print_status "Clearing existing Keychain passwords..."
+        cat > "/tmp/clear_passwords_$$.py" << EOF
 import json
 import subprocess
 
-with open('$TEMP_DECRYPTED', 'r') as f:
+backup_file = '$BACKUP_FILE'
+try:
+    with open(backup_file, 'r') as f:
+        servers = json.load(f)
+    
+    cleared_count = 0
+    for server in servers:
+        server_name = server['name']
+        service = f"wezterm-ssh-{server_name}"
+        result = subprocess.run([
+            'security', 'delete-generic-password', 
+            '-s', service, '-a', 'password'
+        ], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        if result.returncode == 0:
+            cleared_count += 1
+    
+    print(f"Cleared {cleared_count} existing passwords")
+except Exception as e:
+    print(f"Error clearing passwords: {e}")
+EOF
+        python3 "/tmp/clear_passwords_$$.py"
+        rm -f "/tmp/clear_passwords_$$.py"
+    fi
+    
+    # Import new passwords with fixed subprocess calls
+    cat > "/tmp/import_passwords_$$.py" << EOF
+import json
+import subprocess
+import sys
+
+temp_file = '$TEMP_DECRYPTED'
+with open(temp_file, 'r') as f:
     data = json.load(f)
 
 passwords = data.get('passwords', {})
+print(f"Starting import of {len(passwords)} passwords...")
+
 success_count = 0
+failed_count = 0
 
 for server_name, password in passwords.items():
     service = f"wezterm-ssh-{server_name}"
     account = "password"
     
     try:
-        # Delete existing password first
-        subprocess.run([
-            'security', 'delete-generic-password', 
-            '-s', service, '-a', account
-        ], stderr=subprocess.DEVNULL)
-        
-        # Add new password
+        # Add new password - FIXED: no stderr parameter with capture_output
         result = subprocess.run([
             'security', 'add-generic-password', 
             '-s', service, '-a', account, '-w', password
-        ], stderr=subprocess.DEVNULL)
+        ], capture_output=True, text=True)
         
         if result.returncode == 0:
             success_count += 1
+            print(f"✓ Imported password for: {server_name}")
+        else:
+            failed_count += 1
+            error_msg = result.stderr.strip() if result.stderr else "Unknown error"
+            if "already exists" in error_msg:
+                # Try to update existing password
+                subprocess.run([
+                    'security', 'delete-generic-password', 
+                    '-s', service, '-a', account
+                ], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                
+                retry_result = subprocess.run([
+                    'security', 'add-generic-password', 
+                    '-s', service, '-a', account, '-w', password
+                ], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                
+                if retry_result.returncode == 0:
+                    success_count += 1
+                    failed_count -= 1
+                    print(f"✓ Updated password for: {server_name}")
+                else:
+                    print(f"✗ Failed to update password for: {server_name}")
+            else:
+                print(f"✗ Failed to import password for {server_name}: {error_msg}")
             
     except Exception as e:
-        pass
+        failed_count += 1
+        print(f"✗ Exception importing password for {server_name}: {str(e)}")
 
-print(success_count)
+print(f"Password import completed: {success_count} successful, {failed_count} failed")
+print(f"SUCCESS_COUNT={success_count}")
 EOF
-)
 
-# Cleanup
-rm -f "$TEMP_DECRYPTED" "$TEMP_BACKUP_PASSWORDS" 2>/dev/null
+    # Run password import and capture success count
+    PASSWORD_OUTPUT=$(python3 "/tmp/import_passwords_$$.py")
+    echo "$PASSWORD_OUTPUT"
+    
+    # Extract success count from output
+    PASSWORD_SUCCESS_COUNT=$(echo "$PASSWORD_OUTPUT" | grep "SUCCESS_COUNT=" | cut -d'=' -f2)
+    
+    rm -f "/tmp/import_passwords_$$.py"
+else
+    print_warning "No passwords to import"
+    PASSWORD_SUCCESS_COUNT=0
+fi
+
+# Clean up
+rm -f "$TEMP_DECRYPTED"
+
+# Verify results
+print_status "Verifying import results..."
+
+# Check folders
+if [[ "$CURRENT_HAS_FOLDERS" == "true" || "$HAS_FOLDERS" == "True" ]]; then
+    if [[ -f "$FOLDERS_FILE" && -s "$FOLDERS_FILE" ]]; then
+        FINAL_FOLDER_COUNT=$(python3 -c "
+import json
+try:
+    with open('$FOLDERS_FILE', 'r') as f:
+        folders = json.load(f)
+    print(len(folders))
+except:
+    print(0)
+")
+        print_success "folders.json verified: $FINAL_FOLDER_COUNT folders"
+    else
+        print_warning "folders.json missing or empty"
+    fi
+fi
+
+# Check servers
+FINAL_SERVER_COUNT=$(python3 -c "
+import json
+try:
+    with open('$SERVERS_FILE', 'r') as f:
+        servers = json.load(f)
+    print(len(servers))
+except:
+    print(0)
+")
 
 # Results
 echo
 print_success "Import completed successfully! 🎉"
 echo
 echo -e "${GREEN}📊 Results:${NC}"
-echo "  • Final server count: $FINAL_COUNT"
-if [[ "$IMPORT_MODE" == "merge" ]]; then
-    echo "  • Servers added: $ADDED_COUNT"
-    echo "  • Servers kept: $CURRENT_SERVER_COUNT"
-fi
-echo "  • Passwords imported: $PASSWORD_SUCCESS_COUNT/$IMPORT_PASSWORD_COUNT"
+echo "  • Final server count: $FINAL_SERVER_COUNT"
+echo "  • Passwords imported: $PASSWORD_SUCCESS_COUNT/$PASSWORD_COUNT"
 
-if [[ $PASSWORD_SUCCESS_COUNT -lt $IMPORT_PASSWORD_COUNT ]]; then
-    FAILED_PASSWORDS=$(($IMPORT_PASSWORD_COUNT - $PASSWORD_SUCCESS_COUNT))
+if [[ $PASSWORD_SUCCESS_COUNT -lt $PASSWORD_COUNT ]]; then
+    FAILED_PASSWORDS=$(($PASSWORD_COUNT - $PASSWORD_SUCCESS_COUNT))
     print_warning "$FAILED_PASSWORDS passwords failed to import"
 fi
 
@@ -472,3 +499,4 @@ echo
 print_success "SSH configuration restore complete! 🚀"
 echo
 echo "You can now use Ctrl+Shift+S to access your imported servers."
+echo "Servers should appear organized in folders with working passwords."
