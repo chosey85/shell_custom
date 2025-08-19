@@ -292,5 +292,5 @@ echo
 print_success "Export process complete! 🚀"
 echo
 echo "To import this configuration:"
-echo "  ~/.config/wezterm/ssh_import.sh"
+echo "  wezterm_ssh_import.sh"
 echo
