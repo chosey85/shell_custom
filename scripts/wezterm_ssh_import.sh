@@ -96,15 +96,18 @@ try:
         print("ERROR: Invalid export file format")
         sys.exit(1)
     
-    if data['version'] != '1.0':
-        print(f"ERROR: Incompatible version {data['version']}")
+    version = data['version']
+    if version not in ['1.0', '2.0']:
+        print(f"ERROR: Incompatible version {version}")
         sys.exit(1)
     
     server_count = len(data.get('servers', []))
     password_count = len(data.get('passwords', {}))
     exported_at = data.get('exported_at', 'unknown')
+    has_folders = data.get('has_folders', False)
+    folder_count = len(data.get('folders', [])) if has_folders else 0
     
-    print(f"VALID:{server_count}:{password_count}:{exported_at}")
+    print(f"VALID:{version}:{server_count}:{password_count}:{exported_at}:{has_folders}:{folder_count}")
     
 except Exception as e:
     print(f"ERROR: Failed to parse import file: {e}")
@@ -119,15 +122,22 @@ if [[ $IMPORT_INFO == ERROR:* ]]; then
 fi
 
 # Parse import info
-IFS=':' read -r _ IMPORT_SERVER_COUNT IMPORT_PASSWORD_COUNT EXPORTED_AT <<< "$IMPORT_INFO"
+IFS=':' read -r _ IMPORT_VERSION IMPORT_SERVER_COUNT IMPORT_PASSWORD_COUNT EXPORTED_AT IMPORT_HAS_FOLDERS IMPORT_FOLDER_COUNT <<< "$IMPORT_INFO"
 
 print_success "Import file validated successfully"
-echo "  📊 Contains: $IMPORT_SERVER_COUNT servers with $IMPORT_PASSWORD_COUNT passwords"
+echo "  📂 Version: v$IMPORT_VERSION"
+if [[ "$IMPORT_HAS_FOLDERS" == "True" ]]; then
+    echo "  📊 Contains: $IMPORT_SERVER_COUNT servers, $IMPORT_PASSWORD_COUNT passwords, and $IMPORT_FOLDER_COUNT folders"
+else
+    echo "  📊 Contains: $IMPORT_SERVER_COUNT servers with $IMPORT_PASSWORD_COUNT passwords (no folders)"
+fi
 echo "  📅 Exported: $EXPORTED_AT"
 
-# Check current configuration
+# Check current configuration and system compatibility
 SERVERS_FILE="$HOME/.config/wezterm/servers.json"
+FOLDERS_FILE="$HOME/.config/wezterm/folders.json"
 CURRENT_SERVER_COUNT=0
+CURRENT_HAS_FOLDERS=false
 
 if [[ -f "$SERVERS_FILE" ]]; then
     CURRENT_SERVER_COUNT=$(python3 -c "
@@ -142,6 +152,29 @@ except:
     print_status "Current configuration: $CURRENT_SERVER_COUNT servers"
 else
     print_warning "No existing configuration found"
+fi
+
+if [[ -f "$FOLDERS_FILE" ]]; then
+    CURRENT_HAS_FOLDERS=true
+    print_status "Current system: Folder-enabled (v2.0)"
+else
+    print_status "Current system: Legacy (v1.0)"
+fi
+
+# Determine migration scenario
+echo
+if [[ "$IMPORT_HAS_FOLDERS" == "True" && "$CURRENT_HAS_FOLDERS" == "false" ]]; then
+    print_warning "Migration: v2.0 export → v1.0 system (folders will be removed)"
+    echo "  • Folder information will be stripped from servers"
+    echo "  • Servers will be imported without folder organization"
+elif [[ "$IMPORT_HAS_FOLDERS" == "False" && "$CURRENT_HAS_FOLDERS" == "true" ]]; then
+    print_warning "Migration: v1.0 export → v2.0 system (servers will be placed in Root folder)"
+    echo "  • All servers will be assigned to the Root folder"
+    echo "  • You can organize them into folders later"
+elif [[ "$IMPORT_HAS_FOLDERS" == "True" && "$CURRENT_HAS_FOLDERS" == "true" ]]; then
+    print_status "Compatible: v2.0 export → v2.0 system (full compatibility)"
+else
+    print_status "Compatible: v1.0 export → v1.0 system (no changes needed)"
 fi
 
 echo
@@ -219,7 +252,7 @@ with open('$TEMP_BACKUP_PASSWORDS', 'w') as f:
 EOF
 fi
 
-# Import servers
+# Import servers with migration logic
 print_status "Importing server configurations..."
 
 if [[ "$IMPORT_MODE" == "replace" ]]; then
@@ -243,27 +276,79 @@ for server in servers:
 EOF
     fi
     
-    # Copy new servers directly
+    # Import servers with migration logic
     python3 << EOF
 import json
+import os
 
 with open('$TEMP_DECRYPTED', 'r') as f:
     data = json.load(f)
 
+servers = data['servers']
+
+# Migration logic
+if '$IMPORT_HAS_FOLDERS' == 'True' and '$CURRENT_HAS_FOLDERS' == 'false':
+    # v2.0 → v1.0: Strip folder_id from servers
+    print("Migrating from v2.0 to v1.0: removing folder references")
+    for server in servers:
+        if 'folder_id' in server:
+            del server['folder_id']
+            
+elif '$IMPORT_HAS_FOLDERS' == 'False' and '$CURRENT_HAS_FOLDERS' == 'true':
+    # v1.0 → v2.0: Add folder_id = "root" to all servers
+    print("Migrating from v1.0 to v2.0: assigning servers to Root folder")
+    for server in servers:
+        server['folder_id'] = 'root'
+
+# Save servers
 with open('$SERVERS_FILE', 'w') as f:
-    json.dump(data['servers'], f, indent=2)
+    json.dump(servers, f, indent=2)
+
+# Handle folders import
+if '$IMPORT_HAS_FOLDERS' == 'True' and '$CURRENT_HAS_FOLDERS' == 'true':
+    # Import folders for v2.0 → v2.0
+    print("Importing folder structure")
+    folders = data.get('folders', [])
+    with open('$FOLDERS_FILE', 'w') as f:
+        json.dump(folders, f, indent=2)
+elif '$IMPORT_HAS_FOLDERS' == 'False' and '$CURRENT_HAS_FOLDERS' == 'true':
+    # Create minimal folders.json for v1.0 → v2.0
+    print("Creating default folder structure")
+    default_folders = [{"id": "root", "name": "Root"}]
+    with open('$FOLDERS_FILE', 'w') as f:
+        json.dump(default_folders, f, indent=2)
+# For v2.0 → v1.0, we don't create folders.json (legacy system)
+
+print("Migration completed successfully")
 EOF
     
     FINAL_COUNT=$IMPORT_SERVER_COUNT
     
 else
-    # Merge mode
+    # Merge mode with migration
     python3 << EOF
 import json
+import os
 
 # Load import data
 with open('$TEMP_DECRYPTED', 'r') as f:
     import_data = json.load(f)
+
+import_servers = import_data['servers']
+
+# Apply migration to import servers
+if '$IMPORT_HAS_FOLDERS' == 'True' and '$CURRENT_HAS_FOLDERS' == 'false':
+    # v2.0 → v1.0: Strip folder_id from import servers
+    print("Migrating import servers from v2.0 to v1.0: removing folder references")
+    for server in import_servers:
+        if 'folder_id' in server:
+            del server['folder_id']
+            
+elif '$IMPORT_HAS_FOLDERS' == 'False' and '$CURRENT_HAS_FOLDERS' == 'true':
+    # v1.0 → v2.0: Add folder_id = "root" to import servers
+    print("Migrating import servers from v1.0 to v2.0: assigning to Root folder")
+    for server in import_servers:
+        server['folder_id'] = 'root'
 
 # Load existing servers (if any)
 existing_servers = []
@@ -276,7 +361,7 @@ existing_names = {server['name'] for server in existing_servers}
 
 # Add new servers (skip duplicates)
 added_count = 0
-for import_server in import_data['servers']:
+for import_server in import_servers:
     if import_server['name'] not in existing_names:
         existing_servers.append(import_server)
         added_count += 1
@@ -285,14 +370,49 @@ for import_server in import_data['servers']:
 with open('$SERVERS_FILE', 'w') as f:
     json.dump(existing_servers, f, indent=2)
 
+# Handle folders for merge mode
+if '$IMPORT_HAS_FOLDERS' == 'True' and '$CURRENT_HAS_FOLDERS' == 'true' and added_count > 0:
+    # Merge folders for v2.0 → v2.0 (only if we added servers)
+    print("Merging folder structures")
+    import_folders = import_data.get('folders', [])
+    
+    # Load existing folders
+    existing_folders = []
+    if os.path.exists('$FOLDERS_FILE'):
+        with open('$FOLDERS_FILE', 'r') as f:
+            existing_folders = json.load(f)
+    
+    # Create folder ID set for duplicate checking
+    existing_folder_ids = {folder['id'] for folder in existing_folders}
+    
+    # Add new folders (skip duplicates by ID)
+    for import_folder in import_folders:
+        if import_folder['id'] not in existing_folder_ids and import_folder['id'] != 'root':
+            existing_folders.append(import_folder)
+    
+    # Save merged folders
+    with open('$FOLDERS_FILE', 'w') as f:
+        json.dump(existing_folders, f, indent=2)
+
+elif '$IMPORT_HAS_FOLDERS' == 'False' and '$CURRENT_HAS_FOLDERS' == 'true' and not os.path.exists('$FOLDERS_FILE'):
+    # Create minimal folders.json for v1.0 → v2.0 if it doesn't exist
+    print("Creating default folder structure")
+    default_folders = [{"id": "root", "name": "Root"}]
+    with open('$FOLDERS_FILE', 'w') as f:
+        json.dump(default_folders, f, indent=2)
+
 print(f"{added_count}")
 EOF
+    
+    # Extract the added count from the Python script output
     ADDED_COUNT=$(python3 << 'EOF'
 import json
 
-with open('/tmp/wezterm_import_$$.json', 'r') as f:
+# Load import data
+with open('$TEMP_DECRYPTED', 'r') as f:
     import_data = json.load(f)
 
+# Load existing servers 
 existing_servers = []
 if int('$CURRENT_SERVER_COUNT') > 0:
     with open('$SERVERS_FILE', 'r') as f:
