@@ -43,7 +43,7 @@ Welcome to an awesome terminal setup that will make your command-line experience
 ### 🛠️ Productivity Boosters
 - **Better ls**: `lsd` command with icons and colors
 - **Faster grep**: `ripgrep` for blazing fast file searches
-- **SSH Launcher**: Professional SSH server manager with secure password storage (Ctrl+Shift+S)
+- **SSH Launcher**: Professional SSH server manager with folder organization and secure password storage (Ctrl+Shift+S)
 - **SSH Integration**: Ctrl+Shift+C opens Cyberduck for easy file transfers
 - **Git Awareness**: See branch and status right in your prompt
 - **Command Aliases**: Short versions of common commands
@@ -52,11 +52,15 @@ Welcome to an awesome terminal setup that will make your command-line experience
 The SSH Launcher provides XShell/MobaXterm-like functionality directly in WezTerm:
 
 #### ✨ Features
+- **📁 Folder Organization**: Organize servers into custom folders for better management
 - **🔐 Secure Password Storage**: Passwords stored in macOS Keychain for maximum security
 - **⚡ Quick Access**: Press `Ctrl+Shift+S` to instantly open the server selection menu
 - **📋 Server Management**: Add, edit, and delete servers with ease
 - **🎯 Smart Defaults**: Port 22 is assumed for standard SSH connections
 - **🌐 Tab Titles**: SSH tabs display the hostname for easy identification
+- **⌨️ Navigation**: Use Esc key to navigate between menus intuitively
+- **🔍 Folder Filtering**: Click folders to view only servers in that folder
+- **🎯 Fuzzy Search**: Search across all servers and folder names instantly
 
 #### 📖 Usage Guide
 
@@ -79,8 +83,36 @@ The SSH Launcher provides XShell/MobaXterm-like functionality directly in WezTer
 - **Delete**: Select "🗑️ Delete Server" to remove servers
 - **Security Icons**: 🔐 indicates password stored, 🔑 indicates SSH key
 
+##### 📁 Folder Management
+The SSH Launcher supports organizing servers into folders for better management:
+
+**Creating Folders:**
+1. Press `Ctrl+Shift+S` to open the launcher
+2. Select "📁 Create New Folder"
+3. Enter folder name (e.g., "Production", "Development", "Lab Servers")
+
+**Adding Servers to Folders:**
+- When adding a new server, you'll be prompted to select a folder first
+- Servers can be placed in any folder or the Root folder
+
+**Organizing Existing Servers:**
+1. Select "✏️ Edit Server" from the main menu
+2. Choose the server to edit
+3. Select "📁 Change Folder" 
+4. Pick the destination folder
+
+**Folder Operations:**
+- **📝 Rename Folder**: Change folder names while preserving server assignments
+- **🗑️ Delete Empty Folder**: Remove folders that contain no servers
+- **🔍 Folder Filtering**: Click any folder header to view only its servers
+
+**Navigation:**
+- **Esc Key**: Navigate back to previous menu (only exits to terminal from main menu)
+- **Fuzzy Search**: Type to search across all servers and folder names
+- **Visual Hierarchy**: Folders show server count and indented server lists
+
 ### 💾 Backup & Migration (Global Commands)
-The SSH configuration can be backed up and restored using standalone command-line tools:
+The SSH configuration can be backed up and restored using standalone command-line tools with full folder compatibility:
 
 **Export Configuration:**
 ```bash
@@ -88,9 +120,11 @@ The SSH configuration can be backed up and restored using standalone command-lin
 wezterm_ssh_export.sh
 
 # Interactive process:
-# 1. Finds your servers and extracts passwords from Keychain
-# 2. Enter encryption password (min 8 chars) and confirm
-# 3. Creates encrypted file: ~/Downloads/ssh_launcher_export_TIMESTAMP.enc
+# 1. Detects folder-enabled vs legacy systems automatically
+# 2. Choose export format: Full (v2.0 with folders) or Legacy (v1.0 compatible)
+# 3. Finds your servers and extracts passwords from Keychain  
+# 4. Enter encryption password (min 8 chars) and confirm
+# 5. Creates encrypted file: ~/Downloads/ssh_launcher_export_TIMESTAMP.enc
 ```
 
 **Import Configuration:**
@@ -103,9 +137,18 @@ wezterm_ssh_import.sh ~/Downloads/ssh_launcher_export_20240111_120000.enc
 
 # Interactive process:
 # 1. Enter decryption password
-# 2. Choose import mode: Replace all (recommended) or Merge
-# 3. Servers and passwords automatically restored
+# 2. Automatic compatibility detection and migration
+# 3. Choose import mode: Replace all (recommended) or Merge
+# 4. Servers, passwords, and folders automatically restored with migration
 ```
+
+**Migration Compatibility:**
+The export/import tools handle all folder system migrations automatically:
+
+- **📁 v2.0 → v2.0**: Full compatibility with folders preserved
+- **📁 v2.0 → v1.0**: Folders stripped, servers imported without organization
+- **📁 v1.0 → v2.0**: Servers assigned to Root folder, ready for organization
+- **📁 v1.0 → v1.0**: Direct compatibility, no changes needed
 
 **Why Separate Commands?**
 - **🚀 More Reliable**: No complex callback nesting in WezTerm Lua
@@ -113,6 +156,7 @@ wezterm_ssh_import.sh ~/Downloads/ssh_launcher_export_20240111_120000.enc
 - **📱 Universal**: Works from any terminal, anywhere in your system
 - **🎯 Clean Separation**: SSH Launcher focuses on connection, scripts handle backup
 - **⚡ Simple Usage**: Just type the command when you need backup/restore
+- **🔄 Smart Migration**: Automatic compatibility between folder and legacy systems
 - **🛡️ Independent**: Backup/restore works even if WezTerm config changes
 
 **Security Features:**
