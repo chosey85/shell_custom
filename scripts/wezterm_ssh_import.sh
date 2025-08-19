@@ -314,7 +314,7 @@ if '$IMPORT_HAS_FOLDERS' == 'True' and '$CURRENT_HAS_FOLDERS' == 'true':
 elif '$IMPORT_HAS_FOLDERS' == 'False' and '$CURRENT_HAS_FOLDERS' == 'true':
     # Create minimal folders.json for v1.0 → v2.0
     print("Creating default folder structure")
-    default_folders = [{"id": "root", "name": "Root"}]
+    default_folders = [{"id": "root", "name": "Root", "parent": None}]
     with open('$FOLDERS_FILE', 'w') as f:
         json.dump(default_folders, f, indent=2)
 # For v2.0 → v1.0, we don't create folders.json (legacy system)
@@ -397,7 +397,7 @@ if '$IMPORT_HAS_FOLDERS' == 'True' and '$CURRENT_HAS_FOLDERS' == 'true' and adde
 elif '$IMPORT_HAS_FOLDERS' == 'False' and '$CURRENT_HAS_FOLDERS' == 'true' and not os.path.exists('$FOLDERS_FILE'):
     # Create minimal folders.json for v1.0 → v2.0 if it doesn't exist
     print("Creating default folder structure")
-    default_folders = [{"id": "root", "name": "Root"}]
+    default_folders = [{"id": "root", "name": "Root", "parent": None}]
     with open('$FOLDERS_FILE', 'w') as f:
         json.dump(default_folders, f, indent=2)
 
